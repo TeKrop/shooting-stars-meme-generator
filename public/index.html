@@ -1,0 +1,24 @@
+<html>
+    <head>
+        <title>Shooting Stars Meme Generator</title>
+        <link rel="stylesheet" href="css/style.min.css">
+        <link rel="shortcut icon" type="image/png" href="img/favicon.png"/>
+    </head>
+    <body>
+        <video id="video">
+            <source src="videos/background.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="uploader">
+            <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post">
+                <label for="file-upload">Upload your own image</label>
+                <input type="file" id="file-upload" name="file-upload" accept="image/*" />
+            </form>
+        </div>
+        <div id="tap-to-play">
+            <p>Click to play :)</p>
+        </div>
+        <div id="pictures-container"></div>
+        <script src="js/script.min.js"></script>
+    </body>
+</html>
