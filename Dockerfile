@@ -10,5 +10,4 @@ RUN apt update \
     && git clone https://github.com/TeKrop/shooting-stars-meme-generator.git \
     && cd shooting-stars-meme-generator \
     && npm install \
-    && npm install -g nodemon \
     && rm -rf /var/lib/{apt,dpkg,cache,log}/ /tmp/* /var/tmp/*

@@ -4,4 +4,4 @@
 cd /opt/shooting-stars-meme-generator
 
 # Launch the node server
-nodemon server.js
+node server.js
