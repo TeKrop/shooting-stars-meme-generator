@@ -11,6 +11,7 @@
 ## Table of contents
 * [✨ Demo](#-demo)
 * [💽 Installation](#-installation)
+* [🐋 Docker](#-docker)
 * [🤝 Contributing](#-contributing)
 * [📝 License](#-license)
 
@@ -23,6 +24,22 @@ You can see and use a live version of the service here : https://shooting-stars.
 ```sh
 npm install
 node server.js
+```
+
+## 🐋 Docker
+
+### Build
+```
+docker build https://github.com/TeKrop/shooting-stars-meme-generator.git#main -t tekrop/shooting-stars-meme-generator:latest
+```
+### Run
+```
+docker run -d \
+	--name shooting-stars-meme-generator \
+	-p 80:9595 \
+	--volume /local_path_to_data:/opt/shooting-stars-meme-generator/data \
+	--volume /local_path_to_uploads:/opt/shooting-stars-meme-generator/public/uploads \
+	tekrop/shooting-stars-meme-generator
 ```
 
 ## 🤝 Contributing
