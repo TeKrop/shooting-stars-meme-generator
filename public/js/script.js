@@ -22,26 +22,21 @@ var video = document.getElementById('video');
 video.volume = 0.05;
 // once the video has ended, restart the animation
 video.addEventListener('ended', restartAnimation, false);
-// boolean to know if animation is ongoing
-var animationOnGoing = false;
 
 // if mobile, wait for user to tap before launching. else, start on page load
 if (/Mobi/i.test(navigator.userAgent) || /Android/i.test(navigator.userAgent)) {
     document.getElementById('tap-to-play').innerHTML ='<p>Tap the screen to play :)</p>';
 }
 
-// show the text and hide the video
-document.getElementById('tap-to-play').style.display = 'block';
-video.style.display = 'none';
+// boolean to know if animation is ongoing
+var animationOnGoing = false;
 
-// we user finished to tap
-window.addEventListener('touchend', startAnimation);
-window.addEventListener('click', startAnimation);
+// init animation
+restartAnimation();
 
 /**
  * Restart the event (automatic if desktop, manually if mobile)
- * @param  {[type]} e [description]
- * @return {[type]}   [description]
+ * @param  Event  e  JS event
  */
 function restartAnimation(e) {
     // animation is terminated
@@ -60,8 +55,12 @@ function restartAnimation(e) {
  * Start the shooting stars animation
  * @param  Event  e  JS event
  */
+let test = null;
 function startAnimation(e) {
     if (animationOnGoing) return;
+
+    // if we clicked on a link or a button, don't start
+    if (['A', 'INPUT', 'LABEL'].includes(e.target.tagName)) return;
 
     document.getElementById('tap-to-play').style.display = 'none';
     video.style.display = 'block';

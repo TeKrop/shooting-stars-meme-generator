@@ -1,0 +1,8 @@
+version: "1.0"
+services:
+  node:
+    build: .
+    ports:
+      - "9595:9595"
+    volumes:
+      - /opt/tekrop/shooting-stars/uploads:/code/public/uploads

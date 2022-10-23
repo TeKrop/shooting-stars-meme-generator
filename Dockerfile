@@ -1,13 +1,14 @@
-FROM debian:bullseye
+FROM node:16-alpine
 
-CMD ["bash", "/opt/shooting-stars-meme-generator/app.sh"]
+WORKDIR /code
 
-RUN apt update \
-    && apt install -y --no-install-recommends apt-transport-https apt-utils ca-certificates curl \
-    && curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
-    && apt install -y --no-install-recommends nodejs build-essential git \
-    && cd /opt/ \
-    && git clone https://github.com/TeKrop/shooting-stars-meme-generator.git \
-    && cd shooting-stars-meme-generator \
-    && npm install \
-    && rm -rf /var/lib/{apt,dpkg,cache,log}/ /tmp/* /var/tmp/*
+COPY server.js package.json /code/
+COPY public/index.html /code/public/
+COPY public/css /code/public/css/
+COPY public/img /code/public/img/
+COPY public/videos /code/public/videos/
+COPY public/js/script.min.js /code/public/js/
+
+RUN cd /code && npm install --omit=dev
+
+ENTRYPOINT ["node", "/code/server.js"]
