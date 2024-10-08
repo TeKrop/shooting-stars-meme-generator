@@ -5,3 +5,7 @@ services:
       - "9595:9595"
     volumes:
       - /opt/tekrop/shooting-stars/uploads:/code/public/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider --quiet http://0.0.0.0:9595 || exit 1"]
+      interval: 5s
+      timeout: 5s
