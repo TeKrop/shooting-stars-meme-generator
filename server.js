@@ -120,7 +120,7 @@ app.post('/upload', upload.single('file-upload'), function(req, res, next) {
 });
 
 /********** OTHER ROUTES **********/
-app.get('*', function(req, res) {
+app.get('/{*splat}', function(req, res) {
     // load the single view file
     res.sendFile('index.html', { root: __dirname + '/public' });
 });

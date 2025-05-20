@@ -10,7 +10,7 @@ En cas de non-acceptation des conditions générales d'utilisation stipulées da
 
 ## ARTICLE 2 : Mentions légales
 
-L'édition du site [Shooting Stars](https://shooting-stars.tekrop.fr) est assurée par Monsieur Valentin "TeKrop" PORCHET (tekrop@gmail.com).
+L'édition du site [Shooting Stars](https://shooting-stars.tekrop.fr) est assurée par Monsieur Valentin "TeKrop" PORCHET (tekrop@proton.me).
 L'hébergeur du site [Shooting Stars](https://shooting-stars.tekrop.fr) est la Société OVH SAS au capital de 10 174 560,00 € dont le siège social est situé au 2 RUE KELLERMANN 59100 ROUBAIX.
 
 
