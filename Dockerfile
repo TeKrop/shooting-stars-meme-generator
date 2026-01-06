@@ -2,7 +2,7 @@ FROM node:24-alpine
 
 WORKDIR /code
 
-COPY server.js package.json /code/
+COPY server.js package.json package-lock.json /code/
 COPY public/index.html /code/public/
 COPY public/css /code/public/css/
 COPY public/img /code/public/img/
