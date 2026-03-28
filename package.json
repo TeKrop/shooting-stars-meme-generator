@@ -17,8 +17,8 @@
   "license": "MIT",
   "dependencies": {
     "compression": "^1.8.1",
-    "dotenv": "^16.5.0",
-    "express": "^5.1.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
     "helmet": "^8.1.0",
     "morgan": "^1.10.1",
     "multer": "^2.1.1",

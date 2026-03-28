@@ -1,6 +1,7 @@
 services:
   node:
     build: .
+    command: node /code/server.js
     ports:
       - "9595:9595"
     volumes:

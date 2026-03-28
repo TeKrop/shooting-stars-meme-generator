@@ -9,6 +9,4 @@ COPY public/img /code/public/img/
 COPY public/videos /code/public/videos/
 COPY public/js/script.min.js /code/public/js/
 
-RUN cd /code && npm install --omit=dev
-
-ENTRYPOINT ["node", "/code/server.js"]
+RUN cd /code && npm ci --omit=dev
