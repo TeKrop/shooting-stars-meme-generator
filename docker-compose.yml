@@ -3,7 +3,7 @@ services:
     build: .
     command: node /code/server.js
     ports:
-      - "9595:9595"
+      - "127.0.0.1:9595:9595"
     volumes:
       - /opt/tekrop/shooting-stars/uploads:/code/public/uploads
     healthcheck:
