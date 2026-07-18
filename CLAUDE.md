@@ -27,9 +27,12 @@ There is no test suite (`npm test` is a stub) and no linter configured.
 Copy `.env.dist` to `.env` to override `HTTP_PORT`/`HASH_LENGTH` (picked up by
 `docker-compose.yml`'s `env_file:`, optional so a missing `.env` still works
 with `server.js`'s built-in defaults). `NODE_ENV` is deliberately NOT in
-`.env` — it's fixed per Docker target (`development` for `dev`, `production`
-for the prod stage) in the `Dockerfile`, since it controls which Bun.serve
-bundling mode runs (see below), not something to toggle per deployment.
+`.env` — it only appears once in the whole project, as `ENV NODE_ENV=production`
+in the `Dockerfile`'s prod stage. That single line is load-bearing: it's the
+one signal Bun.serve checks to switch its HTML-import bundler from dev mode
+(unminified, `/_bun/...` paths) to production mode (minified, cached, hashed
+filenames) — confirmed by testing, not an assumption. The `dev` stage sets
+nothing; Bun already defaults to dev-mode bundling when the var is unset.
 
 ## Architecture
 
