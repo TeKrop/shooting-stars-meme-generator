@@ -1,14 +1,18 @@
 import index from './index.html';
 import randomstring from 'randomstring';
 
-const NODE_ENV = process.env.NODE_ENV || 'prod';                // environment (dev/prod)
 const HTTP_PORT = parseInt(process.env.HTTP_PORT || 9595);      // http port of the server
 const HASH_LENGTH = parseInt(process.env.HASH_LENGTH || 5);     // hash length for uploaded images URL
 
 const uploadsDir = `${import.meta.dir}/uploads`;
 
-// security headers for well-known web vulnerabilities (skipped in dev, same
-// reasoning as the previous Helmet setup: no value for a local-only server)
+function log(...args) {
+    console.log(`[${new Date().toISOString()}]`, ...args);
+}
+
+// security headers for well-known web vulnerabilities. Not applied to the
+// HTML-bundle routes ('/' and '/*' below) — Bun's HTML-import routing
+// doesn't expose a documented way to attach headers to those.
 const securityHeaders = {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
@@ -16,10 +20,8 @@ const securityHeaders = {
 };
 
 function withSecurityHeaders(response) {
-    if (NODE_ENV !== 'dev') {
-        for (const [key, value] of Object.entries(securityHeaders)) {
-            response.headers.set(key, value);
-        }
+    for (const [key, value] of Object.entries(securityHeaders)) {
+        response.headers.set(key, value);
     }
     return response;
 }
@@ -29,15 +31,16 @@ function serveFrom(dir, prefix) {
     return async function(req) {
         const url = new URL(req.url);
         const file = Bun.file(`${dir}/${url.pathname.slice(prefix.length)}`);
+        const exists = await file.exists();
+        log(exists ? 'served' : '404', url.pathname);
         return withSecurityHeaders(
-            (await file.exists()) ? new Response(file) : new Response('Not Found', { status: 404 })
+            exists ? new Response(file) : new Response('Not Found', { status: 404 })
         );
     };
 }
 
 Bun.serve({
     port: HTTP_PORT,
-    development: NODE_ENV === 'dev' && { hmr: true },
     routes: {
         '/': index,
 
@@ -47,12 +50,13 @@ Bun.serve({
                 const file = form.get('file-upload');
 
                 if (!(file instanceof Blob) || !/^image\/.+$/.test(file.type)) {
-                    console.log('error, file is not an image');
+                    log('upload rejected: not an image', file?.type);
                     return withSecurityHeaders(Response.redirect('/', 303));
                 }
 
                 const filename = randomstring.generate(HASH_LENGTH);
                 await Bun.write(`${uploadsDir}/${filename}`, file);
+                log('upload OK:', filename, file.type, `${file.size} bytes`);
                 return withSecurityHeaders(Response.redirect(`/${filename}`, 303));
             },
         },
@@ -65,6 +69,10 @@ Bun.serve({
         // any other path is a client-side-routed uploaded-image hash: serve the same SPA shell
         '/*': index,
     },
+    error(err) {
+        log('unhandled error:', err);
+        return withSecurityHeaders(new Response('Internal Server Error', { status: 500 }));
+    },
 });
 
-console.log('Listening on port ' + HTTP_PORT + ' with HTTP (' + NODE_ENV + ' mode)');
+log(`Listening on port ${HTTP_PORT} (NODE_ENV=${process.env.NODE_ENV || 'development'})`);

@@ -22,6 +22,7 @@ You can see and use a live version of the service here : https://shooting-stars.
 ## 💽 Installation
 
 ```sh
+cp .env.dist .env # optional, adjust HTTP_PORT/HASH_LENGTH if needed
 bun install
 bun server.js
 ```
@@ -39,7 +40,7 @@ docker build . -t tekrop/shooting-stars-meme-generator:latest
 docker run -d \
 	--name shooting-stars-meme-generator \
 	-p 80:9595 \
-	--volume /local_path_to_uploads:/code/uploads \
+	--volume /local_path_to_uploads:/app/uploads \
 	tekrop/shooting-stars-meme-generator
 ```
 

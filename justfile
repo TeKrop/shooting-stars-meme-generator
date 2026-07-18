@@ -2,8 +2,8 @@
 
 docker_compose := "docker compose"
 docker_run := docker_compose + " run \
-    --volume ${PWD}/package.json:/code/package.json \
-    --volume ${PWD}/bun.lock:/code/bun.lock \
+    --volume ${PWD}/package.json:/app/package.json \
+    --volume ${PWD}/bun.lock:/app/bun.lock \
     --rm \
     bun"
 

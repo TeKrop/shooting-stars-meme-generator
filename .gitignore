@@ -37,5 +37,5 @@ jspm_packages
 # Upload directory
 data/images.json
 
-# Vite build output
-dist
+# local environment overrides (see .env.dist)
+.env

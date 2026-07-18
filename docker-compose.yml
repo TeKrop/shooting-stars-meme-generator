@@ -1,11 +1,14 @@
 services:
   bun:
     build: .
-    command: bun /code/server.js
+    command: bun /app/server.js
+    env_file:
+      - path: ./.env
+        required: false
     ports:
       - "9595:9595"
     volumes:
-      - /opt/tekrop/shooting-stars/uploads:/code/uploads
+      - /opt/tekrop/shooting-stars/uploads:/app/uploads
     healthcheck:
       test: ["CMD-SHELL", "wget --spider --quiet http://0.0.0.0:9595 || exit 1"]
       interval: 5s
@@ -15,13 +18,16 @@ services:
     build:
       context: .
       target: dev
+    env_file:
+      - path: ./.env
+        required: false
     ports:
       - "9595:9595"
     volumes:
-      - /opt/tekrop/shooting-stars/uploads:/code/uploads
-      - ./server.js:/code/server.js
-      - ./index.html:/code/index.html
-      - ./src:/code/src
-      - ./public:/code/public
+      - /opt/tekrop/shooting-stars/uploads:/app/uploads
+      - ./server.js:/app/server.js
+      - ./index.html:/app/index.html
+      - ./src:/app/src
+      - ./public:/app/public
     profiles:
       - dev
