@@ -1,8 +1,17 @@
 <html>
     <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Turn any image into a shooting star flying across the sky, meme-style. Upload a picture and watch it soar.">
         <title>Shooting Stars Meme Generator</title>
         <link rel="stylesheet" href="css/style.min.css">
         <link rel="shortcut icon" type="image/png" href="img/favicon.png"/>
+
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="Shooting Stars Meme Generator">
+        <meta property="og:description" content="Turn any image into a shooting star flying across the sky, meme-style. Upload a picture and watch it soar.">
+        <meta property="og:image" content="https://shooting-stars.tekrop.fr/img/preview.png">
+        <meta property="og:url" content="https://shooting-stars.tekrop.fr">
     </head>
     <body>
         <video id="video">
@@ -10,8 +19,9 @@
             Your browser does not support the video tag.
         </video>
         <div class="uploader">
+            <p class="tagline">Turn your own picture into a shooting star !</p>
             <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post">
-                <label for="file-upload">Upload your own image</label>
+                <label for="file-upload">📷 Upload your own image</label>
                 <input type="file" id="file-upload" name="file-upload" accept="image/*" />
             </form>
         </div>
