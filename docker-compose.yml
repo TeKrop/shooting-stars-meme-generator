@@ -5,8 +5,24 @@ services:
     ports:
       - "9595:9595"
     volumes:
-      - /opt/tekrop/shooting-stars/uploads:/code/public/uploads
+      - /opt/tekrop/shooting-stars/uploads:/code/uploads
     healthcheck:
       test: ["CMD-SHELL", "wget --spider --quiet http://0.0.0.0:9595 || exit 1"]
       interval: 5s
       timeout: 5s
+
+  node-dev:
+    build:
+      context: .
+      target: dev
+    ports:
+      - "9595:9595"
+    volumes:
+      - /opt/tekrop/shooting-stars/uploads:/code/uploads
+      - ./server.js:/code/server.js
+      - ./vite.config.js:/code/vite.config.js
+      - ./index.html:/code/index.html
+      - ./src:/code/src
+      - ./public:/code/public
+    profiles:
+      - dev

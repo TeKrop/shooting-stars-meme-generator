@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "vite build"
   },
   "keywords": [
     "shooting",
@@ -25,9 +26,7 @@
     "randomstring": "^1.3.1"
   },
   "devDependencies": {
-    "@node-minify/core": "^10.5.0",
-    "@node-minify/uglify-js": "^10.5.0",
-    "@node-minify/yui": "^10.5.0",
-    "node-watch": "^0.7.4"
+    "less": "^4.6.7",
+    "vite": "^8.1.5"
   }
 }

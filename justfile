@@ -21,6 +21,11 @@ start:
     @echo "Launching Shooting Stars (production mode)..."
     {{ docker_compose }} up -d
 
+# run Shooting Stars in dev mode (live HMR via Vite middleware)
+dev:
+    @echo "Launching Shooting Stars (dev mode, Vite HMR)..."
+    {{ docker_compose }} --profile dev up node-dev
+
 # access an interactive shell inside the app container
 shell:
     @echo "Running shell on node container..."
