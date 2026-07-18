@@ -21,7 +21,7 @@ if (NODE_ENV === 'dev') {
     exec = require('child_process').exec;                      // launch process from code
     minify = require('@node-minify/core').minify;              // tool for minifying CSS and JS
     uglifyjs = require('@node-minify/uglify-js').uglifyJs;     // compressor for JS
-    yui = require('@node-minify/yui').minifyYUI;               // compressor for JS
+    yui = require('@node-minify/yui').yui;                      // compressor for CSS
 }
 
 /*************** CONFIG ***************/
