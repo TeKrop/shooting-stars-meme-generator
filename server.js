@@ -17,11 +17,11 @@ const randomstring = require('randomstring');   // generate random strings
 
 let watch, exec, minify, uglifyjs, yui;
 if (NODE_ENV === 'dev') {
-    watch = require('node-watch');                // watch files or directories for changes
-    exec = require('child_process').exec;         // launch process from code
-    minify = require('@node-minify/core');        // tool for minifying CSS and JS
-    uglifyjs = require('@node-minify/uglify-js'); // compressor for JS
-    yui = require('@node-minify/yui');            // compressor for JS
+    watch = require('node-watch');                             // watch files or directories for changes
+    exec = require('child_process').exec;                      // launch process from code
+    minify = require('@node-minify/core').minify;              // tool for minifying CSS and JS
+    uglifyjs = require('@node-minify/uglify-js').uglifyJs;     // compressor for JS
+    yui = require('@node-minify/yui').minifyYUI;               // compressor for JS
 }
 
 /*************** CONFIG ***************/
@@ -71,13 +71,11 @@ if (NODE_ENV === 'dev') {
                 input: [
                     'public/css/style.min.css'
                 ],
-                output: 'public/css/style.min.css',
-                callback: function(err, min) {
-                    console.log('[node-watch] style.css minification done !');
-                    if (err !== null) {
-                        console.log(err);
-                    }
-                }
+                output: 'public/css/style.min.css'
+            }).then(function() {
+                console.log('[node-watch] style.css minification done !');
+            }).catch(function(err) {
+                console.log(err);
             });
         });
     });
@@ -90,13 +88,11 @@ if (NODE_ENV === 'dev') {
             input: [
                 'public/js/script.js'
             ],
-            output: 'public/js/script.min.js',
-            callback: function(err, min) {
-                console.log('[node-watch] script.min.js compilation done !');
-                if (err !== null) {
-                    console.log(err);
-                }
-            }
+            output: 'public/js/script.min.js'
+        }).then(function() {
+            console.log('[node-watch] script.min.js compilation done !');
+        }).catch(function(err) {
+            console.log(err);
         });
     });
 }
