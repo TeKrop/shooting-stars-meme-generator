@@ -1,12 +1,12 @@
-import index from './index.html';
 import randomstring from 'randomstring';
+import index from './index.html';
 
-const HTTP_PORT = parseInt(process.env.HTTP_PORT || 9595);      // http port of the server
-const HASH_LENGTH = parseInt(process.env.HASH_LENGTH || 5);     // hash length for uploaded images URL
+const HTTP_PORT = parseInt(process.env.HTTP_PORT || '9595', 10); // http port of the server
+const HASH_LENGTH = parseInt(process.env.HASH_LENGTH || '5', 10); // hash length for uploaded images URL
 
 const uploadsDir = `${import.meta.dir}/uploads`;
 
-function log(...args) {
+function log(...args: unknown[]) {
     console.log(`[${new Date().toISOString()}]`, ...args);
 }
 
@@ -19,7 +19,7 @@ const securityHeaders = {
     'Content-Security-Policy': "default-src 'self'",
 };
 
-function withSecurityHeaders(response) {
+function withSecurityHeaders(response: Response): Response {
     for (const [key, value] of Object.entries(securityHeaders)) {
         response.headers.set(key, value);
     }
@@ -27,14 +27,16 @@ function withSecurityHeaders(response) {
 }
 
 // serves a file from `dir`, stripping `prefix` off the request path
-function serveFrom(dir, prefix) {
-    return async function(req) {
+function serveFrom(dir: string, prefix: string) {
+    return async (req: Request): Promise<Response> => {
         const url = new URL(req.url);
         const file = Bun.file(`${dir}/${url.pathname.slice(prefix.length)}`);
         const exists = await file.exists();
         log(exists ? 'served' : '404', url.pathname);
         return withSecurityHeaders(
-            exists ? new Response(file) : new Response('Not Found', { status: 404 })
+            exists
+                ? new Response(file)
+                : new Response('Not Found', { status: 404 }),
         );
     };
 }
@@ -50,14 +52,19 @@ Bun.serve({
                 const file = form.get('file-upload');
 
                 if (!(file instanceof Blob) || !/^image\/.+$/.test(file.type)) {
-                    log('upload rejected: not an image', file?.type);
+                    log(
+                        'upload rejected: not an image',
+                        file instanceof Blob ? file.type : typeof file,
+                    );
                     return withSecurityHeaders(Response.redirect('/', 303));
                 }
 
                 const filename = randomstring.generate(HASH_LENGTH);
                 await Bun.write(`${uploadsDir}/${filename}`, file);
                 log('upload OK:', filename, file.type, `${file.size} bytes`);
-                return withSecurityHeaders(Response.redirect(`/${filename}`, 303));
+                return withSecurityHeaders(
+                    Response.redirect(`/${filename}`, 303),
+                );
             },
         },
 
@@ -71,8 +78,12 @@ Bun.serve({
     },
     error(err) {
         log('unhandled error:', err);
-        return withSecurityHeaders(new Response('Internal Server Error', { status: 500 }));
+        return withSecurityHeaders(
+            new Response('Internal Server Error', { status: 500 }),
+        );
     },
 });
 
-log(`Listening on port ${HTTP_PORT} (NODE_ENV=${process.env.NODE_ENV || 'development'})`);
+log(
+    `Listening on port ${HTTP_PORT} (NODE_ENV=${process.env.NODE_ENV || 'development'})`,
+);

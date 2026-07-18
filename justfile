@@ -31,6 +31,16 @@ shell:
     @echo "Running shell on bun container..."
     {{ docker_run }} /bin/sh
 
+# type-check + lint/format-check the sources (bun runs .ts directly either way, this only checks)
+check:
+    @echo "Checking..."
+    {{ docker_compose }} --profile dev run --rm bun-dev bun run check
+
+# auto-fix lint/format issues (biome)
+format:
+    @echo "Formatting..."
+    {{ docker_compose }} --profile dev run --rm bun-dev bun run lint:fix
+
 # build & run Shooting Stars application (production mode)
 up: build start
 

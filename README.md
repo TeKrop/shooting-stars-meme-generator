@@ -24,7 +24,7 @@ You can see and use a live version of the service here : https://shooting-stars.
 ```sh
 cp .env.dist .env # optional, adjust HTTP_PORT/HASH_LENGTH if needed
 bun install
-bun server.js
+bun server.ts
 ```
 
 ## 🐋 Docker

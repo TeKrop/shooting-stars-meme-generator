@@ -1,7 +1,7 @@
 services:
   bun:
     build: .
-    command: bun /app/server.js
+    command: bun /app/server.ts
     env_file:
       - path: ./.env
         required: false
@@ -25,8 +25,11 @@ services:
       - "9595:9595"
     volumes:
       - /opt/tekrop/shooting-stars/uploads:/app/uploads
-      - ./server.js:/app/server.js
+      - ./server.ts:/app/server.ts
       - ./index.html:/app/index.html
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./biome.json:/app/biome.json
+      - ./.gitignore:/app/.gitignore
       - ./src:/app/src
       - ./public:/app/public
     profiles:
