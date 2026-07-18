@@ -22,8 +22,8 @@ You can see and use a live version of the service here : https://shooting-stars.
 ## 💽 Installation
 
 ```sh
-npm install
-node server.js
+bun install
+bun server.js
 ```
 
 ## 🐋 Docker
@@ -39,7 +39,7 @@ docker build . -t tekrop/shooting-stars-meme-generator:latest
 docker run -d \
 	--name shooting-stars-meme-generator \
 	-p 80:9595 \
-	--volume /local_path_to_uploads:/code/public/uploads \
+	--volume /local_path_to_uploads:/code/uploads \
 	tekrop/shooting-stars-meme-generator
 ```
 
@@ -51,7 +51,7 @@ Feel free to check [issues page](https://github.com/TeKrop/shooting-stars-meme-g
 
 ## 📝 License
 
-Copyright © 2017-2022 [Valentin PORCHET](https://github.com/TeKrop).
+Copyright © 2017-2026 [Valentin PORCHET](https://github.com/TeKrop).
 
 This project is [MIT](https://github.com/TeKrop/shooting-stars-meme-generator/blob/master/LICENSE) licensed.
 

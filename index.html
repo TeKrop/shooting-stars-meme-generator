@@ -4,8 +4,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="description" content="Turn any image into a shooting star flying across the sky, meme-style. Upload a picture and watch it soar.">
         <title>Shooting Stars Meme Generator</title>
-        <link rel="stylesheet" href="/src/style.less">
-        <link rel="shortcut icon" type="image/png" href="img/favicon.png"/>
+        <link rel="stylesheet" href="./src/style.css">
+        <link rel="shortcut icon" type="image/png" href="/img/favicon.png"/>
 
         <meta property="og:type" content="website">
         <meta property="og:title" content="Shooting Stars Meme Generator">
@@ -15,7 +15,7 @@
     </head>
     <body>
         <video id="video">
-            <source src="videos/background.mp4" type="video/mp4">
+            <source src="./public/videos/background.mp4" type="video/mp4">
             Your browser does not support the video tag.
         </video>
         <div class="uploader">
@@ -32,6 +32,6 @@
         <footer>
             <p>Code by <b><a href="https://tekrop.fr" target="_blank">Valentin "TeKrop" PORCHET</a></b> - <a href="https://github.com/TeKrop/shooting-stars-meme-generator/blob/main/CGU.md" target="_blank">Terms and conditions of use</a> (in french)</p>
         </footer>
-        <script type="module" src="/src/script.js"></script>
+        <script type="module" src="./src/script.js"></script>
     </body>
 </html>

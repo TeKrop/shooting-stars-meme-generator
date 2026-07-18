@@ -144,25 +144,18 @@ footer {
 
 /** Initialization **/
 
-@init-t: 1000px;  /* base translate */
-@init-s: 0.5; /* base scale */
-@init-r: 180deg;  /* base rotation */
-
 .init_1 {
     animation: init 4.0s linear infinite;
 }
 @keyframes init {
-    0% { transform: translateX(-@init-t) scale(2*@init-s) rotate(0*@init-r); }
-    25% { transform: translateX(0*@init-t) scale(3*@init-s) rotate(@init-r); }
-    50% { transform: translateX(@init-t) scale(2*@init-s) rotate(2*@init-r); }
-    75% { transform: translateX(0*@init-t) scale(3*@init-s) rotate(@init-r); }
-    100% { transform: translateX(-@init-t) scale(2*@init-s) rotate(0*@init-r); }
+    0% { transform: translateX(-1000px) scale(1) rotate(0deg); }
+    25% { transform: translateX(0px) scale(1.5) rotate(180deg); }
+    50% { transform: translateX(1000px) scale(1) rotate(360deg); }
+    75% { transform: translateX(0px) scale(1.5) rotate(180deg); }
+    100% { transform: translateX(-1000px) scale(1) rotate(0deg); }
 }
 
 /** First space sequence **/
-
-@spaceone-tx: 25px;
-@spaceone-ty: 25px;
 
 .spaceone_1 {
     animation: spaceone 4.2s linear infinite;
