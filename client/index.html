@@ -19,14 +19,16 @@
             Your browser does not support the video tag.
         </video>
         <div class="uploader">
-            <p class="tagline">Turn your own picture into a shooting star !</p>
-            <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post">
-                <label for="file-upload">📷 Upload your own image</label>
-                <input type="file" id="file-upload" name="file-upload" accept="image/*" />
-            </form>
+            <div class="uploader-card">
+                <p class="tagline">✦ Make it fly ✦</p>
+                <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post">
+                    <input type="file" id="file-upload" name="file-upload" accept="image/*" />
+                    <label for="file-upload">📷 Upload pic</label>
+                </form>
+            </div>
         </div>
         <div id="tap-to-play">
-            <p>Click to play :)</p>
+            <p>▶ Click to launch</p>
         </div>
         <div id="pictures-container"></div>
         <footer>
