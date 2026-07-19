@@ -24,7 +24,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          just test-coverage | tee coverage.txt
+          just test-coverage 2>&1 | tee coverage.txt
           PERCENT=$(grep "All files" coverage.txt | awk -F'|' '{gsub(/ /,"",$3); print $3}')
           echo "COVERAGE=$PERCENT" >> "$GITHUB_ENV"
 
