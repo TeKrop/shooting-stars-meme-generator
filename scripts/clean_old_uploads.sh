@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+
+PATH_TO_UPLOADS="/uploads"
+UPLOAD_RETENTION_DAYS="${UPLOAD_RETENTION_DAYS:-30}"
+
+find "$PATH_TO_UPLOADS" -ctime "+$UPLOAD_RETENTION_DAYS" -delete

@@ -41,6 +41,11 @@ format:
     @echo "Formatting..."
     {{ docker_compose }} --profile dev run --rm bun-dev bun run lint:fix
 
+# run the test suite (bun:test)
+test:
+    @echo "Running tests..."
+    {{ docker_compose }} --profile dev run --rm bun-dev bun test
+
 # build & run Shooting Stars application (production mode)
 up: build start
 

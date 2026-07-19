@@ -6,9 +6,9 @@ services:
       - path: ./.env
         required: false
     ports:
-      - "9595:9595"
+      - "${APP_PORT:-9595}:9595"
     volumes:
-      - /opt/tekrop/shooting-stars/uploads:/app/uploads
+      - ${UPLOADS_DIR:-/tmp/shooting-stars-uploads}:/app/uploads
     healthcheck:
       test: ["CMD-SHELL", "wget --spider --quiet http://0.0.0.0:9595 || exit 1"]
       interval: 5s
@@ -22,9 +22,9 @@ services:
       - path: ./.env
         required: false
     ports:
-      - "9595:9595"
+      - "${APP_PORT:-9595}:9595"
     volumes:
-      - /opt/tekrop/shooting-stars/uploads:/app/uploads
+      - ${UPLOADS_DIR:-/tmp/shooting-stars-uploads}:/app/uploads
       - ./server.ts:/app/server.ts
       - ./index.html:/app/index.html
       - ./tsconfig.json:/app/tsconfig.json
@@ -32,5 +32,15 @@ services:
       - ./.gitignore:/app/.gitignore
       - ./src:/app/src
       - ./public:/app/public
+      - ./tests:/app/tests
     profiles:
       - dev
+
+  cleanup:
+    build: ./scripts
+    env_file:
+      - path: ./.env
+        required: false
+    volumes:
+      - ${UPLOADS_DIR:-/tmp/shooting-stars-uploads}:/uploads
+    restart: unless-stopped

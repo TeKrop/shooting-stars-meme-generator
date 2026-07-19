@@ -17,24 +17,48 @@ just check       # tsc --noEmit + biome check, inside the dev container (see Not
 just format      # biome check --write, auto-fixes lint/format issues
 just up          # build + start
 just shell       # shell into the bun container
+just test        # bun test, inside the dev container
 just down        # stop + remove containers (keeps volumes)
 just down_clean  # stop + remove containers AND volumes
 just lock        # regenerate bun.lock inside the container
 ```
 
-There is no test suite (`npm test` is a stub). Linting/formatting is Biome (`biome.json`), invoked via `just check`/`just format`.
+Tests are `bun:test` (`tests/server.test.ts`), invoked via `just test` or
+`bun test` directly (Bun's own test runner — no Jest/Vitest needed). Linting/
+formatting is Biome (`biome.json`), invoked via `just check`/`just format`.
 
 ## Configuration
 
-Copy `.env.dist` to `.env` to override `HTTP_PORT`/`HASH_LENGTH` (picked up by
-`docker-compose.yml`'s `env_file:`, optional so a missing `.env` still works
-with `server.ts`'s built-in defaults). `NODE_ENV` is deliberately NOT in
-`.env` — it only appears once in the whole project, as `ENV NODE_ENV=production`
-in the `Dockerfile`'s prod stage. That single line is load-bearing: it's the
-one signal Bun.serve checks to switch its HTML-import bundler from dev mode
-(unminified, `/_bun/...` paths) to production mode (minified, cached, hashed
-filenames) — confirmed by testing, not an assumption. The `dev` stage sets
-nothing; Bun already defaults to dev-mode bundling when the var is unset.
+Copy `.env.dist` to `.env` to override `APP_PORT`/`HASH_LENGTH`/`UPLOADS_DIR`/
+`UPLOAD_RETENTION_DAYS`. These are picked up two different ways:
+`HASH_LENGTH`/`UPLOAD_RETENTION_DAYS` flow through `docker-compose.yml`'s
+`env_file:` into the container's `process.env`, for `server.ts` and
+`scripts/clean_old_uploads.sh` to read; `APP_PORT`/`UPLOADS_DIR` are only ever
+read by `docker compose` itself, via plain shell-style `${VAR}` interpolation
+when parsing `docker-compose.yml` — for the host-side port mapping and the
+uploads bind-mount path shared by the `bun`/`bun-dev`/`cleanup` services.
+Both mechanisms read the same `.env` file but are otherwise unrelated
+features of Compose. The app's own listening port is deliberately NOT
+configurable — `server.ts` hardcodes `9595` whether run via `bun server.ts`
+directly or inside a container; only the Docker host-side publish port
+(`APP_PORT`, default `9595`) can differ. `.env` is optional, so a missing one
+still works, falling back to `server.ts`'s built-in defaults and to
+`docker-compose.yml`'s own `${VAR:-default}` fallbacks (currently
+`/tmp/shooting-stars-uploads` for `UPLOADS_DIR` — a dedicated subfolder rather
+than bare `/tmp`, so the bind mount doesn't pull in unrelated files already
+sitting in the host's shared `/tmp`; point it at a real persistent host path
+for production). Docker creates the directory itself on first `up` if it
+doesn't exist yet — no manual setup needed — and the `cleanup` service's own
+age-based pruning (see Architecture below) applies to it the same as any
+other path, so there's no extra lifecycle to manage beyond that.
+`NODE_ENV` is deliberately NOT in `.env` — it only appears once in the whole
+project, as
+`ENV NODE_ENV=production` in the `Dockerfile`'s prod stage. That single line
+is load-bearing: it's the one signal Bun.serve checks to switch its
+HTML-import bundler from dev mode (unminified, `/_bun/...` paths) to
+production mode (minified, cached, hashed filenames) — confirmed by testing,
+not an assumption. The `dev` stage sets nothing; Bun already defaults to
+dev-mode bundling when the var is unset.
 
 ## TypeScript
 
@@ -68,11 +92,9 @@ overrides on top of the recommended preset:
   decorative background loop with no dialogue, so a captions requirement
   doesn't apply.
 
-CSS formatting/linting is disabled entirely (`css.formatter.enabled: false`,
-`css.linter.enabled: false`) — Biome's CSS formatter rewrites the compact
-one-line `@keyframes` rules in `src/style.css` into a much more verbose
-multi-line style, which was a large, purely-cosmetic diff unrelated to
-anything actually being changed; not worth it for one file.
+CSS formatting/linting is enabled (default), which reformats `src/style.css`'s
+`@keyframes` rules from compact one-liners into one-property-per-line —
+purely cosmetic, no behavior change.
 
 `vcs.useIgnoreFile: true` needs an actual `.gitignore` present to work, so
 it's bind-mounted into `bun-dev` alongside the other source paths — without
@@ -89,6 +111,7 @@ testing) rather than silently skipping the exclusion.
   - A few security response headers (`X-Content-Type-Options`, `X-Frame-Options`, a basic CSP) are set on every response we build ourselves — no `helmet` dependency needed for this. Not applied to the HTML-bundle routes (`'/'`/`'/*'`) since Bun's HTML-import routing doesn't expose a documented way to attach custom headers to those.
   - `log()` is a tiny timestamped `console.log` wrapper used for startup info, every upload attempt (success with filename/type/size, or rejection reason), every static file serve/404 under `/uploads/*` and `/img/*`, and uncaught errors (via Bun.serve's `error` hook). The two HTML-bundle routes are the one place that can't be logged per-request, per the limitation above.
   - Bun loads `.env` files natively — no `dotenv`.
+  - The `Bun.serve()` return value is kept (`const server = ...`) and `export default`ed purely so `tests/server.test.ts` can `fetch()` against it directly, in-process — not used by `server.ts` itself otherwise.
 
 - **`index.html`** (project root, Bun's HTML-import entry point) — links `src/style.css` and `src/script.ts` via plain relative paths, and the background video via `./public/videos/background.mp4` (a real relative path so Bun's bundler picks it up, copies it, and rewrites the URL — referencing it as `/videos/background.mp4` instead makes the bundler try and fail to resolve it as a module). The favicon `<link>` is the one asset-looking tag Bun's bundler does NOT process at all, so it keeps a plain `/img/favicon.png` server-relative href, served by the `/img/*` route.
 
@@ -98,13 +121,18 @@ testing) rather than silently skipping the exclusion.
 
 - **`public/img/doge.png`** — the only asset still served through a manual route rather than the HTML bundler, since it's referenced dynamically (see `script.ts` above).
 
-- **`uploads/`** — runtime-written, gitignored, lives at the project root. In Docker this is a bind-mounted volume (`/opt/tekrop/shooting-stars/uploads` on the host per `docker-compose.yml`) so uploads survive container recreation. `clean_old_uploads.sh` (meant to run via host cron, not inside the container) deletes uploaded files older than 30 days from a hardcoded path.
+- **`uploads/`** — runtime-written, gitignored, lives at the project root (used directly by `bun server.ts` outside Docker). In Docker this is a bind-mounted volume (`${UPLOADS_DIR}` on the host, defaulting to `/tmp/shooting-stars-uploads` per `docker-compose.yml` — point it at a real persistent path for production) so uploads survive container recreation, shared by the `bun`/`bun-dev` and `cleanup` services.
+
+- **`scripts/clean_old_uploads.sh`** + **`scripts/Dockerfile`** — the upload-retention job, now containerized instead of relying on host cron. The script wraps `find "$PATH_TO_UPLOADS" -ctime "+$DAYS_BEFORE_REMOVAL" -delete`; `PATH_TO_UPLOADS` defaults to `/uploads` (the cleanup service's fixed container-side mount point — not meant to be overridden via `.env`, unlike `UPLOADS_DIR` which controls the host side of that same mount), and `DAYS_BEFORE_REMOVAL` reads the `UPLOAD_RETENTION_DAYS` env var (default `30`) so the same name is used end-to-end from `.env` through to the script, no renaming layer in `docker-compose.yml`. The `cleanup` service picks up `.env` the same way `bun`/`bun-dev` do, via `env_file:`, rather than cherry-picking individual vars into an `environment:` block. `scripts/Dockerfile` is a tiny `alpine:3` + `findutils` image (alpine's own `find` is busybox's and doesn't support `-ctime`) whose entrypoint is a `while true; sleep 1d` loop around the script — a deliberate shortcut over a real `crond` entry, since there's exactly one daily job; swap to `crond` if a real schedule (specific time, multiple jobs) is ever needed. Wired into `docker-compose.yml` as the `cleanup` service (default profile, runs alongside `bun` in production; `restart: unless-stopped`).
 
 - **`Dockerfile`** — based on `oven/bun:1-alpine`, working directory `/app`. A `deps` stage runs `bun install --frozen-lockfile` (shared by both targets — there's no dev/prod dependency split, so `typescript`/`@types/*` devDependencies ride along into the prod image unused at runtime, a deliberate simplicity-over-size trade-off); a `dev` target runs `bun --hot server.ts` against bind-mounted source for live HMR; the final untargeted stage copies the source (including `tsconfig.json`) in and runs `bun server.ts` with `NODE_ENV=production` (bundling/minification happens lazily at runtime, no build stage or `dist/` artifact needed).
 
-- **`docker-compose.yml`** — two services: `bun` (default profile, production) and `bun-dev` (profile `dev`, builds the `dev` Dockerfile target, bind-mounts `server.ts`/`index.html`/`tsconfig.json`/`biome.json`/`.gitignore`/`src/`/`public/` for live editing — `just check`/`just format` also run as one-off `docker compose run`s against this same service, so they always check/fix the current working tree rather than whatever was last baked into an image).
+- **`docker-compose.yml`** — three services: `bun` (default profile, production), `bun-dev` (profile `dev`, builds the `dev` Dockerfile target, bind-mounts `server.ts`/`index.html`/`tsconfig.json`/`biome.json`/`.gitignore`/`src/`/`public/`/`tests/` for live editing — `just check`/`just format`/`just test` also run as one-off `docker compose run`s against this same service, so they always check/fix/test the current working tree rather than whatever was last baked into an image), and `cleanup` (default profile, builds `scripts/`, runs the upload-retention job). `bun`/`bun-dev`'s port mapping is `"${APP_PORT:-9595}:9595"` — only the host side is configurable via `.env`; the container side is always `9595`, matching `server.ts`'s hardcoded port. `UPLOADS_DIR`'s bind-mount path is likewise a `${VAR:-default}` interpolation rather than hardcoded.
+
+- **`tests/server.test.ts`** — `bun:test` against the real `server.ts`, imported directly (its port is fixed at `9595`, but each `bun test` run happens in its own throwaway container via `docker compose run`, which doesn't publish ports, so it never collides with an already-running `bun`/`bun-dev` service). Covers: `/` loads, an image upload redirects to a `/<hash>` URL that itself loads, a non-image upload is rejected back to `/`, and a never-uploaded hash 404s under `/uploads/*`. Cleans up any file it writes to `uploads/` in `afterAll`.
 
 ## Notes
 
 - The upload filter only checks MIME type (`image/*`), not file contents or extension.
-- Port is `9595` by default (`HTTP_PORT` env var), and in the current compose setup is bound to localhost only.
+- The app always listens on `9595`; only the Docker host-side publish port (`APP_PORT` env var) can differ, and in the current compose setup is bound to localhost only.
+- Uploaded files older than `UPLOAD_RETENTION_DAYS` (default 30) are deleted daily by the `cleanup` compose service — see `scripts/` in Architecture above.

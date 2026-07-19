@@ -1,7 +1,10 @@
 import randomstring from 'randomstring';
 import index from './index.html';
 
-const HTTP_PORT = parseInt(process.env.HTTP_PORT || '9595', 10); // http port of the server
+// Fixed on purpose: the app always listens on 9595 inside the container (or
+// on the host, if run directly with `bun server.ts`). Only the Docker host-side
+// port mapping is configurable, via APP_PORT in docker-compose.yml.
+const HTTP_PORT = 9595;
 const HASH_LENGTH = parseInt(process.env.HASH_LENGTH || '5', 10); // hash length for uploaded images URL
 
 const uploadsDir = `${import.meta.dir}/uploads`;
@@ -41,7 +44,7 @@ function serveFrom(dir: string, prefix: string) {
     };
 }
 
-Bun.serve({
+const server = Bun.serve({
     port: HTTP_PORT,
     routes: {
         '/': index,
@@ -85,5 +88,7 @@ Bun.serve({
 });
 
 log(
-    `Listening on port ${HTTP_PORT} (NODE_ENV=${process.env.NODE_ENV || 'development'})`,
+    `Listening on port ${server.port} (NODE_ENV=${process.env.NODE_ENV || 'development'})`,
 );
+
+export default server;

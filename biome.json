@@ -30,14 +30,6 @@
             "quoteStyle": "single"
         }
     },
-    "css": {
-        "formatter": {
-            "enabled": false
-        },
-        "linter": {
-            "enabled": false
-        }
-    },
     "assist": {
         "enabled": true,
         "actions": {
