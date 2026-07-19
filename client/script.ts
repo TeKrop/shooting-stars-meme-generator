@@ -41,17 +41,22 @@ function restartAnimation() {
     // animation is terminated
     animationOnGoing = false;
     video.style.display = 'none';
+    showLaunchPrompt();
+}
 
-    // don't allow launching until the video is actually loaded, so the
-    // animation can never run ahead of a video that isn't ready yet
+/**
+ * Don't allow launching until the video is actually loaded, so the
+ * animation can never run ahead of a video that isn't ready yet
+ */
+function showLaunchPrompt() {
     tapToPlay.style.display = 'block';
-    if (video.readyState >= video.HAVE_ENOUGH_DATA) {
+    if (video.readyState >= video.HAVE_CURRENT_DATA) {
         tapToPlay.innerHTML = `<p>${tapToPlayText}</p>`;
         window.addEventListener('touchend', startAnimation);
         window.addEventListener('click', startAnimation);
     } else {
         tapToPlay.innerHTML = '<p>⌛ Loading…</p>';
-        video.addEventListener('canplaythrough', restartAnimation, {
+        video.addEventListener('loadeddata', showLaunchPrompt, {
             once: true,
         });
     }
