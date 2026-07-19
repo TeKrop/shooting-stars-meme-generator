@@ -9,9 +9,18 @@ const HASH_LENGTH = parseInt(process.env.HASH_LENGTH || '5', 10); // hash length
 
 const uploadsDir = `${import.meta.dir}/../uploads`;
 
+// generous for a cropped/edited PNG out of the browser (the crop zone tops
+// out around 800x700 CSS px, but $toCanvas() renders at source-image
+// resolution, so a large original photo can still produce a large PNG) —
+// just a sane upper bound, not a tight fit
+const MAX_UPLOAD_SIZE = 15 * 1024 * 1024;
+
 // extension to store the upload under, so Bun can infer the right
 // Content-Type when serving it back — the public URL/hash stays bare
-// regardless (see resolveUpload below).
+// regardless (see resolveUpload below). New uploads are PNG-only (see
+// '/upload' below, which always re-encodes client-side before sending) —
+// the rest of this map exists purely so uploads from before that
+// restriction still resolve/serve correctly (see KNOWN_SUFFIXES).
 const EXTENSION_BY_MIME: Record<string, string> = {
     'image/png': 'png',
     'image/jpeg': 'jpg',
@@ -114,17 +123,31 @@ const server = Bun.serve({
                 const form = await req.formData();
                 const file = form.get('file-upload');
 
-                if (!(file instanceof Blob) || !/^image\/.+$/.test(file.type)) {
+                // PNG-only: the client always crops/re-encodes through canvas
+                // before uploading (needed for the transparency-editing
+                // feature regardless of the original file's format), so
+                // there's no legitimate case where anything else arrives here
+                if (!(file instanceof Blob) || file.type !== 'image/png') {
                     log(
-                        'upload rejected: not an image',
+                        'upload rejected: not a PNG',
                         file instanceof Blob ? file.type : typeof file,
                     );
-                    return withSecurityHeaders(Response.redirect('/', 303));
+                    // the `error` query param lets the client show a
+                    // specific reason instead of just failing silently
+                    return withSecurityHeaders(
+                        Response.redirect('/?error=invalid_type', 303),
+                    );
+                }
+
+                if (file.size > MAX_UPLOAD_SIZE) {
+                    log('upload rejected: too large', `${file.size} bytes`);
+                    return withSecurityHeaders(
+                        Response.redirect('/?error=too_large', 303),
+                    );
                 }
 
                 const hash = randomstring.generate(HASH_LENGTH);
-                const ext = EXTENSION_BY_MIME[file.type];
-                const storedName = ext ? `${hash}.${ext}` : hash;
+                const storedName = `${hash}.png`;
                 await Bun.write(`${uploadsDir}/${storedName}`, file);
                 log('upload OK:', storedName, file.type, `${file.size} bytes`);
                 return withSecurityHeaders(Response.redirect(`/${hash}`, 303));

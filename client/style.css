@@ -23,12 +23,24 @@ body {
     left: 50%;
 
     transform: translate(-50%, -50%);
-    border: 3px solid var(--color-ink);
+    border: 3px solid var(--color-cyan);
     border-radius: 12px;
     padding: 20px 32px;
     background: rgba(17, 17, 22, 0.55);
-    box-shadow: 4px 4px 0 var(--color-ink);
-    animation: pulse-invite 1.8s ease-in-out infinite;
+    box-shadow:
+        4px 4px 0 var(--color-ink),
+        0 0 16px rgba(46, 230, 214, 0.3);
+    animation: pulse-glow 1.8s ease-in-out infinite;
+    cursor: pointer;
+    opacity: 1;
+    transition:
+        opacity 0.4s ease,
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        filter 0.15s ease;
 
     color: var(--color-cream);
     font-family: sans-serif;
@@ -41,15 +53,83 @@ body {
     p {
         margin: 0;
     }
+
+    /* the sparkles either side of the text twinkle independently, offset
+       so they don't pulse in sync */
+    .spark {
+        display: inline-block;
+        animation: twinkle 2.4s ease-in-out infinite;
+
+        &:last-child {
+            animation-delay: 1.2s;
+        }
+    }
+
+    /* used when launching: faded out in place of the old instant
+       display:none, so the button visibly hands off to the animation
+       instead of just vanishing */
+    &.fade-out {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /* pausing the glow pulse here (rather than fighting it every frame)
+       lets these static box-shadow/transform values actually stick while
+       interacting */
+    &:hover,
+    &:active {
+        animation-play-state: paused;
+    }
+
+    /* solid cyan fill + black text + white border is an unmissable
+       "you're hovering this" signal on top of the scale — .spark inherits
+       `color` from here too, so the sparkles flip to ink along with the text */
+    &:hover {
+        background: var(--color-cyan);
+        color: var(--color-ink);
+        border-color: white;
+        transform: translate(-50%, -50%) scale(1.05);
+        box-shadow:
+            6px 6px 0 var(--color-ink),
+            0 0 32px rgba(46, 230, 214, 0.6);
+    }
+
+    &:active {
+        transform: translate(-50%, -50%) scale(0.96);
+        box-shadow: 0 0 0 var(--color-ink);
+        filter: brightness(0.9);
+    }
+
+    &:focus-visible {
+        outline: 3px solid var(--color-cyan);
+        outline-offset: 4px;
+        transform: translate(-50%, -50%) scale(1.05);
+    }
 }
 
-@keyframes pulse-invite {
+@keyframes pulse-glow {
     0%,
     100% {
-        transform: translate(-50%, -50%) scale(1);
+        box-shadow:
+            4px 4px 0 var(--color-ink),
+            0 0 16px rgba(46, 230, 214, 0.3);
     }
     50% {
-        transform: translate(-50%, -50%) scale(1.04);
+        box-shadow:
+            4px 4px 0 var(--color-ink),
+            0 0 30px rgba(46, 230, 214, 0.65);
+    }
+}
+
+@keyframes twinkle {
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: scale(0.85) rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.2) rotate(180deg);
     }
 }
 
@@ -71,6 +151,10 @@ div#pictures-container {
     left: 0;
     width: 100%;
     height: 100%;
+    /* purely decorative, never interactive — without this it sits on top
+       of (and blocks clicks/hover on) #tap-to-play in the stacking order,
+       since it comes later in the DOM and neither has a z-index */
+    pointer-events: none;
 
     img {
         position: absolute;
@@ -86,6 +170,84 @@ div#pictures-container {
             display: none;
         }
     }
+}
+
+#upload-error {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    max-width: min(90vw, 480px);
+
+    border: 3px solid var(--color-ink);
+    border-radius: 10px;
+    padding: 12px 16px;
+    background: #7a2a2a;
+    box-shadow: 4px 4px 0 var(--color-ink);
+
+    &[hidden] {
+        display: none;
+    }
+
+    p {
+        margin: 0;
+        color: var(--color-cream);
+        font-family: sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    button {
+        flex-shrink: 0;
+        background: none;
+        border: none;
+        padding: 0;
+        color: var(--color-cream);
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1;
+        cursor: pointer;
+    }
+}
+
+.site-title {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 280px;
+}
+
+.site-logo {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border: 2px solid var(--color-ink);
+    border-radius: 8px;
+    box-shadow: 3px 3px 0 var(--color-ink);
+}
+
+.site-title h1 {
+    margin: 0;
+    color: var(--color-cream);
+    font-family: sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: right;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    text-shadow:
+        2px 2px 0 var(--color-ink),
+        0 0 12px rgba(46, 230, 214, 0.4);
 }
 
 .uploader {
@@ -167,6 +329,247 @@ input#file-upload {
     }
 }
 
+dialog#preview-dialog {
+    border: 3px solid var(--color-ink);
+    border-radius: 10px;
+    padding: 0;
+    background: transparent;
+
+    &::backdrop {
+        background: rgba(17, 17, 22, 0.7);
+    }
+}
+
+.preview-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: rgba(17, 17, 22, 0.85);
+    box-shadow: 4px 4px 0 var(--color-ink);
+    max-width: min(95vw, 900px);
+}
+
+#crop-step,
+#edit-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+
+    &[hidden] {
+        display: none;
+    }
+}
+
+#crop-area {
+    position: relative;
+    width: min(85vw, 800px);
+    height: 70vh;
+
+    /* cropper-canvas has no default width/height beyond a 100px min-height,
+       so without this it renders far smaller than its container */
+    cropper-canvas {
+        width: 100%;
+        height: 100%;
+    }
+}
+
+#preview-img {
+    max-width: 100%;
+    max-height: 100%;
+
+    -webkit-user-drag: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+#edit-canvas {
+    display: block;
+    max-width: min(85vw, 800px);
+    max-height: 70vh;
+    touch-action: none;
+    cursor: crosshair;
+    border: 2px solid var(--color-ink);
+
+    /* checkerboard so erased/picked-transparent areas are visible while editing */
+    background-image:
+        linear-gradient(45deg, #444 25%, transparent 25%),
+        linear-gradient(-45deg, #444 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #444 75%),
+        linear-gradient(-45deg, transparent 75%, #444 75%);
+    background-size: 16px 16px;
+    background-position:
+        0 0,
+        0 8px,
+        8px -8px,
+        -8px 0;
+    background-color: #666;
+}
+
+.tool-picker {
+    display: flex;
+    gap: 8px;
+
+    button {
+        font-family: sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        padding: 6px 12px;
+        border: 2px solid var(--color-ink);
+        border-radius: 6px;
+        cursor: pointer;
+        color: var(--color-cream);
+        background: transparent;
+
+        &[aria-pressed="true"] {
+            background: var(--color-cyan);
+            color: var(--color-ink);
+        }
+
+        &:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+    }
+}
+
+.slider-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-cream);
+    font-family: sans-serif;
+    font-size: 13px;
+
+    &[hidden] {
+        display: none;
+    }
+
+    /* a plain text label, not the button-like card the bare `label`
+       selector above is styled for (that one's meant for the file-upload
+       trigger specifically) */
+    label {
+        padding: 0;
+        background: none;
+        border: none;
+        box-shadow: none;
+        cursor: default;
+        font-size: inherit;
+        font-weight: 400;
+        color: inherit;
+        text-shadow: none;
+        transition: none;
+
+        &:hover,
+        &:active {
+            background: none;
+            transform: none;
+            box-shadow: none;
+        }
+    }
+}
+
+.crop-hint {
+    margin: 0;
+    color: var(--color-cream);
+    font-family: sans-serif;
+    font-size: 13px;
+    opacity: 0.8;
+}
+
+.preview-actions {
+    display: flex;
+    gap: 10px;
+
+    button {
+        font-family: sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        padding: 10px 18px;
+        border: 3px solid var(--color-ink);
+        border-radius: 6px;
+        cursor: pointer;
+        box-shadow: 4px 4px 0 var(--color-ink);
+        color: var(--color-cream);
+        background: var(--color-orange);
+
+        &:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0 0 0 var(--color-ink);
+        }
+
+        &:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+    }
+
+    /* dismissive action: muted red */
+    #preview-cancel {
+        background: #7a2a2a;
+    }
+
+    /* secondary/step-back action: neutral grey */
+    #edit-back {
+        background: #4a4f57;
+    }
+
+    /* the final, primary action — bigger, distinct color, and a gentle
+       pulse so it's unmistakably the one to press */
+    #preview-confirm {
+        font-size: 18px;
+        padding: 12px 22px;
+        background: var(--color-cyan);
+        color: var(--color-ink);
+        animation: pulse-button 2s ease-in-out infinite;
+
+        &:disabled {
+            animation: none;
+        }
+    }
+}
+
+@keyframes pulse-button {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* swaps the label for a spinner while the upload is in flight */
+#preview-confirm.is-loading {
+    color: transparent;
+    position: relative;
+    pointer-events: none;
+
+    &::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 18px;
+        height: 18px;
+        margin: -9px 0 0 -9px;
+        border: 3px solid rgba(17, 17, 22, 0.35);
+        border-top-color: var(--color-ink);
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 footer {
     color: var(--color-cream);
     font-family: sans-serif;
@@ -203,6 +606,16 @@ footer {
 @media (prefers-reduced-motion: reduce) {
     #tap-to-play {
         animation: none;
+
+        .spark {
+            animation: none;
+        }
+
+        &:hover,
+        &:active,
+        &:focus-visible {
+            transform: translate(-50%, -50%);
+        }
     }
 
     label {
@@ -213,9 +626,33 @@ footer {
             transform: none;
         }
     }
+
+    .preview-actions #preview-confirm {
+        animation: none;
+    }
+
+    #preview-confirm.is-loading::after {
+        animation-duration: 1.2s;
+    }
 }
 
 @media (max-width: 480px) {
+    .site-title {
+        top: 12px;
+        right: 12px;
+        max-width: 130px;
+        gap: 6px;
+    }
+
+    .site-logo {
+        width: 28px;
+        height: 28px;
+    }
+
+    .site-title h1 {
+        font-size: 12px;
+    }
+
     .uploader {
         top: 12px;
         left: 12px;
@@ -245,29 +682,6 @@ footer {
         font-size: 11px;
         padding: 5px 12px;
         bottom: 8px;
-    }
-}
-
-/** Initialization **/
-
-.init_1 {
-    animation: init 4s linear infinite;
-}
-@keyframes init {
-    0% {
-        transform: translateX(-1000px) scale(1) rotate(0deg);
-    }
-    25% {
-        transform: translateX(0px) scale(1.5) rotate(180deg);
-    }
-    50% {
-        transform: translateX(1000px) scale(1) rotate(360deg);
-    }
-    75% {
-        transform: translateX(0px) scale(1.5) rotate(180deg);
-    }
-    100% {
-        transform: translateX(-1000px) scale(1) rotate(0deg);
     }
 }
 
