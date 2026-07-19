@@ -23,10 +23,13 @@ video.volume = 0.05;
 video.addEventListener('ended', restartAnimation, false);
 
 const tapToPlay = document.getElementById('tap-to-play') as HTMLElement;
-const tapToPlayText = '✦ Press to fly ✦';
+const tapToPlayText =
+    '<span class="spark">✦</span> Press to fly <span class="spark">✦</span>';
 
-// boolean to know if animation is ongoing
-let animationOnGoing = false;
+// pending setTimeout ids for the current run's picture choreography, so a
+// restart (e.g. uploading a new image mid-flight) can cancel them instead
+// of leaving them to fire later and stomp on the new run's classes
+let animationTimeouts: ReturnType<typeof setTimeout>[] = [];
 
 // init animation
 restartAnimation();
@@ -51,8 +54,6 @@ function applyUploadedImage(hash: string) {
  * Restart the event (automatic if desktop, manually if mobile)
  */
 function restartAnimation() {
-    // animation is terminated
-    animationOnGoing = false;
     video.style.display = 'none';
     showLaunchPrompt();
 }
@@ -63,6 +64,7 @@ function restartAnimation() {
  */
 function showLaunchPrompt() {
     tapToPlay.style.display = 'block';
+    tapToPlay.classList.remove('fade-out');
     if (video.readyState >= video.HAVE_CURRENT_DATA) {
         tapToPlay.innerHTML = `<p>${tapToPlayText}</p>`;
         // scoped to the prompt itself, not the whole page — only clicking/
@@ -84,18 +86,27 @@ type AnimationStage = {
 };
 
 /**
- * Start the shooting stars animation
+ * Start the shooting stars animation — always (re)starts cleanly, so
+ * calling it while a run is already ongoing (e.g. uploading a new image
+ * mid-flight) restarts from "init" with the new image instead of just
+ * swapping the picture src underneath whatever's currently flying.
  */
 function startAnimation() {
-    if (animationOnGoing) return;
+    // cancel any still-pending choreography from a previous run so it can't
+    // fire later and stomp on this run's classes
+    animationTimeouts.forEach((id) => {
+        clearTimeout(id);
+    });
+    animationTimeouts = [];
 
-    tapToPlay.style.display = 'none';
+    // fades out rather than vanishing instantly, so the button visibly
+    // hands off to the image that flies in during the "init" stage below
+    tapToPlay.classList.add('fade-out');
     video.style.display = 'block';
 
-    // animation is starting
-    animationOnGoing = true;
-
-    // play the background video
+    // play the background video from the start, even if a previous run
+    // left it mid-playback
+    video.currentTime = 0;
     video.play();
 
     // times and classes associated with images
@@ -139,7 +150,7 @@ function startAnimation() {
 
     // main loop for class change events
     for (const time in times) {
-        setTimeout(() => {
+        const id = setTimeout(() => {
             // foreach pictures
             for (let i = pictures.length - 1; i >= 0; i--) {
                 const img = document.getElementById(pictures[i])!;
@@ -152,5 +163,6 @@ function startAnimation() {
                 }
             }
         }, Number(time));
+        animationTimeouts.push(id);
     }
 }

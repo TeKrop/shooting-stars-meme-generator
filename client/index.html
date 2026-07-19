@@ -18,6 +18,10 @@
             <source src="./public/videos/background.mp4" type="video/mp4">
             Your browser does not support the video tag.
         </video>
+        <header class="site-title">
+            <img src="./public/img/favicon.png" alt="" class="site-logo">
+            <h1>Shooting Stars Meme Generator</h1>
+        </header>
         <div class="uploader">
             <div class="uploader-card">
                 <p class="tagline">✦ Make it fly ✦</p>
@@ -30,6 +34,10 @@
         <button type="button" id="tap-to-play">
             <p></p>
         </button>
+        <div id="upload-error" role="alert" hidden>
+            <p></p>
+            <button type="button" id="upload-error-close" aria-label="Dismiss">✕</button>
+        </div>
         <dialog id="preview-dialog">
             <div class="preview-card">
                 <div id="crop-step">

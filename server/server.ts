@@ -9,6 +9,12 @@ const HASH_LENGTH = parseInt(process.env.HASH_LENGTH || '5', 10); // hash length
 
 const uploadsDir = `${import.meta.dir}/../uploads`;
 
+// generous for a cropped/edited PNG out of the browser (the crop zone tops
+// out around 800x700 CSS px, but $toCanvas() renders at source-image
+// resolution, so a large original photo can still produce a large PNG) —
+// just a sane upper bound, not a tight fit
+const MAX_UPLOAD_SIZE = 15 * 1024 * 1024;
+
 // extension to store the upload under, so Bun can infer the right
 // Content-Type when serving it back — the public URL/hash stays bare
 // regardless (see resolveUpload below). New uploads are PNG-only (see
@@ -126,7 +132,18 @@ const server = Bun.serve({
                         'upload rejected: not a PNG',
                         file instanceof Blob ? file.type : typeof file,
                     );
-                    return withSecurityHeaders(Response.redirect('/', 303));
+                    // the `error` query param lets the client show a
+                    // specific reason instead of just failing silently
+                    return withSecurityHeaders(
+                        Response.redirect('/?error=invalid_type', 303),
+                    );
+                }
+
+                if (file.size > MAX_UPLOAD_SIZE) {
+                    log('upload rejected: too large', `${file.size} bytes`);
+                    return withSecurityHeaders(
+                        Response.redirect('/?error=too_large', 303),
+                    );
                 }
 
                 const hash = randomstring.generate(HASH_LENGTH);

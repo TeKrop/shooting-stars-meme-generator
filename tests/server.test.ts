@@ -37,7 +37,7 @@ describe('POST /upload', () => {
         });
 
         expect(res.status).toBe(303);
-        expect(res.headers.get('location')).toBe('/');
+        expect(res.headers.get('location')).toBe('/?error=invalid_type');
     });
 
     test('rejects a non-PNG image upload', async () => {
@@ -61,7 +61,7 @@ describe('POST /upload', () => {
         });
 
         expect(res.status).toBe(303);
-        expect(res.headers.get('location')).toBe('/');
+        expect(res.headers.get('location')).toBe('/?error=invalid_type');
     });
 
     test('accepts a PNG upload and redirects to a hash URL', async () => {
@@ -107,7 +107,27 @@ describe('POST /upload', () => {
         });
 
         expect(res.status).toBe(303);
-        expect(res.headers.get('location')).toBe('/');
+        expect(res.headers.get('location')).toBe('/?error=invalid_type');
+    });
+
+    test('rejects an upload over the size limit', async () => {
+        const form = new FormData();
+        form.set(
+            'file-upload',
+            new Blob([new Uint8Array(15 * 1024 * 1024 + 1)], {
+                type: 'image/png',
+            }),
+            'big.png',
+        );
+
+        const res = await fetch(new URL('/upload', server.url), {
+            method: 'POST',
+            body: form,
+            redirect: 'manual',
+        });
+
+        expect(res.status).toBe(303);
+        expect(res.headers.get('location')).toBe('/?error=too_large');
     });
 });
 

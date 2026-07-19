@@ -27,12 +27,19 @@ body {
     border-radius: 12px;
     padding: 20px 32px;
     background: rgba(17, 17, 22, 0.55);
-    box-shadow: 4px 4px 0 var(--color-ink);
-    animation: pulse-invite 1.8s ease-in-out infinite;
+    box-shadow:
+        4px 4px 0 var(--color-ink),
+        0 0 16px rgba(46, 230, 214, 0.3);
+    animation: pulse-glow 1.8s ease-in-out infinite;
     cursor: pointer;
+    opacity: 1;
     transition:
+        opacity 0.4s ease,
+        transform 0.15s ease,
         box-shadow 0.15s ease,
         background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
         filter 0.15s ease;
 
     color: var(--color-cream);
@@ -47,15 +54,48 @@ body {
         margin: 0;
     }
 
-    /* not the `transform` property — that's owned by the pulse animation
-       above, and a static hover/active transform would just get overridden
-       every frame while it's running */
+    /* the sparkles either side of the text twinkle independently, offset
+       so they don't pulse in sync */
+    .spark {
+        display: inline-block;
+        animation: twinkle 2.4s ease-in-out infinite;
+
+        &:last-child {
+            animation-delay: 1.2s;
+        }
+    }
+
+    /* used when launching: faded out in place of the old instant
+       display:none, so the button visibly hands off to the animation
+       instead of just vanishing */
+    &.fade-out {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /* pausing the glow pulse here (rather than fighting it every frame)
+       lets these static box-shadow/transform values actually stick while
+       interacting */
+    &:hover,
+    &:active {
+        animation-play-state: paused;
+    }
+
+    /* solid cyan fill + black text + white border is an unmissable
+       "you're hovering this" signal on top of the scale — .spark inherits
+       `color` from here too, so the sparkles flip to ink along with the text */
     &:hover {
-        background: rgba(17, 17, 22, 0.75);
-        box-shadow: 6px 6px 0 var(--color-ink);
+        background: var(--color-cyan);
+        color: var(--color-ink);
+        border-color: white;
+        transform: translate(-50%, -50%) scale(1.05);
+        box-shadow:
+            6px 6px 0 var(--color-ink),
+            0 0 32px rgba(46, 230, 214, 0.6);
     }
 
     &:active {
+        transform: translate(-50%, -50%) scale(0.96);
         box-shadow: 0 0 0 var(--color-ink);
         filter: brightness(0.9);
     }
@@ -63,16 +103,33 @@ body {
     &:focus-visible {
         outline: 3px solid var(--color-cyan);
         outline-offset: 4px;
+        transform: translate(-50%, -50%) scale(1.05);
     }
 }
 
-@keyframes pulse-invite {
+@keyframes pulse-glow {
     0%,
     100% {
-        transform: translate(-50%, -50%) scale(1);
+        box-shadow:
+            4px 4px 0 var(--color-ink),
+            0 0 16px rgba(46, 230, 214, 0.3);
     }
     50% {
-        transform: translate(-50%, -50%) scale(1.04);
+        box-shadow:
+            4px 4px 0 var(--color-ink),
+            0 0 30px rgba(46, 230, 214, 0.65);
+    }
+}
+
+@keyframes twinkle {
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: scale(0.85) rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.2) rotate(180deg);
     }
 }
 
@@ -113,6 +170,84 @@ div#pictures-container {
             display: none;
         }
     }
+}
+
+#upload-error {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    max-width: min(90vw, 480px);
+
+    border: 3px solid var(--color-ink);
+    border-radius: 10px;
+    padding: 12px 16px;
+    background: #7a2a2a;
+    box-shadow: 4px 4px 0 var(--color-ink);
+
+    &[hidden] {
+        display: none;
+    }
+
+    p {
+        margin: 0;
+        color: var(--color-cream);
+        font-family: sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    button {
+        flex-shrink: 0;
+        background: none;
+        border: none;
+        padding: 0;
+        color: var(--color-cream);
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1;
+        cursor: pointer;
+    }
+}
+
+.site-title {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 280px;
+}
+
+.site-logo {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border: 2px solid var(--color-ink);
+    border-radius: 8px;
+    box-shadow: 3px 3px 0 var(--color-ink);
+}
+
+.site-title h1 {
+    margin: 0;
+    color: var(--color-cream);
+    font-family: sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: right;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    text-shadow:
+        2px 2px 0 var(--color-ink),
+        0 0 12px rgba(46, 230, 214, 0.4);
 }
 
 .uploader {
@@ -471,6 +606,16 @@ footer {
 @media (prefers-reduced-motion: reduce) {
     #tap-to-play {
         animation: none;
+
+        .spark {
+            animation: none;
+        }
+
+        &:hover,
+        &:active,
+        &:focus-visible {
+            transform: translate(-50%, -50%);
+        }
     }
 
     label {
@@ -492,6 +637,22 @@ footer {
 }
 
 @media (max-width: 480px) {
+    .site-title {
+        top: 12px;
+        right: 12px;
+        max-width: 130px;
+        gap: 6px;
+    }
+
+    .site-logo {
+        width: 28px;
+        height: 28px;
+    }
+
+    .site-title h1 {
+        font-size: 12px;
+    }
+
     .uploader {
         top: 12px;
         left: 12px;
@@ -521,29 +682,6 @@ footer {
         font-size: 11px;
         padding: 5px 12px;
         bottom: 8px;
-    }
-}
-
-/** Initialization **/
-
-.init_1 {
-    animation: init 4s linear infinite;
-}
-@keyframes init {
-    0% {
-        transform: translateX(-1000px) scale(1) rotate(0deg);
-    }
-    25% {
-        transform: translateX(0px) scale(1.5) rotate(180deg);
-    }
-    50% {
-        transform: translateX(1000px) scale(1) rotate(360deg);
-    }
-    75% {
-        transform: translateX(0px) scale(1.5) rotate(180deg);
-    }
-    100% {
-        transform: translateX(-1000px) scale(1) rotate(0deg);
     }
 }
 

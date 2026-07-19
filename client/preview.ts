@@ -7,6 +7,19 @@ import { initTransparencyTools } from './transparency';
 // stays visible around the image instead of the image filling it edge-to-edge
 const IMAGE_FIT_SCALE = 0.8;
 
+// matches the `error` query param the server redirects to '/' with (see
+// server.ts's '/upload' handler)
+const UPLOAD_ERROR_MESSAGES: Record<string, string> = {
+    invalid_type: "That doesn't look like a valid image. Please try again.",
+    too_large: 'This image is too large. Please try again with a smaller one.',
+};
+const DEFAULT_UPLOAD_ERROR = "Couldn't upload this image. Please try again.";
+const SERVER_ERROR_MESSAGE =
+    'Something went wrong on our end. Please try again.';
+const NETWORK_ERROR_MESSAGE = "Couldn't reach the server. Please try again.";
+
+const UPLOAD_ERROR_DISMISS_MS = 6000;
+
 export function initPreviewDialog(onUploaded: (hash: string) => void) {
     const fileInput = document.getElementById(
         'file-upload',
@@ -34,10 +47,31 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
         'preview-confirm',
     ) as HTMLButtonElement;
 
+    const uploadError = document.getElementById('upload-error') as HTMLElement;
+    const uploadErrorText = uploadError.querySelector('p')!;
+    const uploadErrorClose = document.getElementById(
+        'upload-error-close',
+    ) as HTMLElement;
+
     const { reset: resetTransparencyTools } = initTransparencyTools(editCanvas);
 
     let objectUrl: string | null = null;
     let cropper: Cropper | null = null;
+    let uploadErrorTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    function showUploadError(message: string) {
+        uploadErrorText.textContent = message;
+        uploadError.hidden = false;
+        if (uploadErrorTimeout) clearTimeout(uploadErrorTimeout);
+        uploadErrorTimeout = setTimeout(() => {
+            uploadError.hidden = true;
+        }, UPLOAD_ERROR_DISMISS_MS);
+    }
+
+    uploadErrorClose.onclick = () => {
+        uploadError.hidden = true;
+        if (uploadErrorTimeout) clearTimeout(uploadErrorTimeout);
+    };
 
     fileInput.onchange = () => {
         const file = fileInput.files?.[0];
@@ -152,22 +186,32 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
                 method: 'POST',
                 body: formData,
             });
+
+            if (res.status >= 500) {
+                previewDialog.close();
+                showUploadError(SERVER_ERROR_MESSAGE);
+                return;
+            }
+
             // fetch already followed the 303, so this is the final URL —
-            // a bare '/' means the upload was rejected server-side, which
-            // has no hash to apply in place; fall back to a real navigation
-            // (matches what the server itself redirects to on rejection)
-            const hash = new URL(res.url).pathname.slice(1);
+            // a bare '/' means the upload was rejected server-side (see
+            // the `error` query param for why)
+            const url = new URL(res.url);
+            const hash = url.pathname.slice(1);
             if (hash) {
                 previewDialog.close();
                 onUploaded(hash);
-            } else {
-                window.location.assign(res.url);
+                return;
             }
+
+            previewDialog.close();
+            const reason = url.searchParams.get('error') ?? '';
+            showUploadError(
+                UPLOAD_ERROR_MESSAGES[reason] ?? DEFAULT_UPLOAD_ERROR,
+            );
         } catch {
-            uploadBtn.disabled = false;
-            uploadBtn.classList.remove('is-loading');
-            cancelBtn.disabled = false;
-            backBtn.disabled = false;
+            previewDialog.close();
+            showUploadError(NETWORK_ERROR_MESSAGE);
         }
     };
 }
