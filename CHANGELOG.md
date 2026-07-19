@@ -1,3 +1,10 @@
+## [2.3.2](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.3.1...v2.3.2) (2026-07-19)
+
+
+### Bug Fixes
+
+* updated dialog style (title and crosshair on eraser) ([#24](https://github.com/TeKrop/shooting-stars-meme-generator/issues/24)) ([59a3639](https://github.com/TeKrop/shooting-stars-meme-generator/commit/59a363930469a5bbe2a413e36f5a7a8704fd2231))
+
 ## [2.3.1](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.3.0...v2.3.1) (2026-07-19)
 
 
