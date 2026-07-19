@@ -62,12 +62,21 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
     // displayed CSS pixels, since the canvas can be shown smaller than its
     // backing resolution)
     function updateEraseCursor() {
+        if (tool !== 'erase') return;
+
         const radius = Number(eraseSizeInput.value);
+        if (!Number.isFinite(radius) || radius <= 0) return;
+
         const displayRadius =
             (radius * canvas.getBoundingClientRect().width) / canvas.width;
-        const size = Math.ceil(displayRadius) * 2 + 2;
+        // rasterize at devicePixelRatio so the outline stays crisp (not
+        // blurry-upscaled) on high-DPI screens; cursor hotspot/size are in
+        // raster pixels, so everything below is scaled by dpr together
+        const dpr = window.devicePixelRatio || 1;
+        const size = (Math.ceil(displayRadius) * 2 + 2) * dpr;
         const center = size / 2;
-        const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}'><circle cx='${center}' cy='${center}' r='${displayRadius}' fill='none' stroke='white' stroke-width='1.5'/><circle cx='${center}' cy='${center}' r='${displayRadius}' fill='none' stroke='black' stroke-width='1' stroke-dasharray='3'/></svg>`;
+        const r = displayRadius * dpr;
+        const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}'><circle cx='${center}' cy='${center}' r='${r}' fill='none' stroke='white' stroke-width='${1.5 * dpr}'/><circle cx='${center}' cy='${center}' r='${r}' fill='none' stroke='black' stroke-width='${dpr}' stroke-dasharray='${3 * dpr}'/></svg>`;
         canvas.style.cursor = `url("data:image/svg+xml,${encodeURIComponent(svg)}") ${center} ${center}, crosshair`;
     }
     eraseSizeInput.oninput = updateEraseCursor;
@@ -79,7 +88,7 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
         eraseSizeControl.hidden = tool !== 'erase';
         pickToleranceControl.hidden = tool !== 'pick';
         if (tool === 'erase') updateEraseCursor();
-        else canvas.style.cursor = 'crosshair';
+        else canvas.style.cursor = '';
     }
     eraseBtn.onclick = () => setTool('erase');
     pickBtn.onclick = () => setTool('pick');
