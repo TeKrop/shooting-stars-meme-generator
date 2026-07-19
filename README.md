@@ -72,6 +72,14 @@ Contributions, issues and feature requests are welcome!
 
 Feel free to check [issues page](https://github.com/TeKrop/shooting-stars-meme-generator/issues).
 
+Before opening a PR:
+
+**Local checks**
+* run `just check` (type-check + lint) and `just test` locally — CI runs the same checks on every PR
+
+**Commit messages**
+* follow [Conventional Commits](https://www.conventionalcommits.org/) (`type(scope): subject`, e.g. `fix: correct upload hash length`, `feat: add drag-and-drop upload`) — this drives automated releases, see [CLAUDE.md § Contributing](CLAUDE.md#contributing) for details
+
 ## 📝 License
 
 Copyright © 2017-2026 [Valentin PORCHET](https://github.com/TeKrop).
