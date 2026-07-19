@@ -1,10 +1,10 @@
 # 🐶 Shooting Stars Meme Generator
 
-![Version](https://img.shields.io/github/package-json/v/TeKrop/shooting-stars-meme-generator)
+![Version](https://shields.tekrop.fr/github/package-json/v/TeKrop/shooting-stars-meme-generator)
 [![Build Status](https://github.com/TeKrop/shooting-stars-meme-generator/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/TeKrop/shooting-stars-meme-generator/actions/workflows/build.yml)
-![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/TeKrop/b345b1863b0bfcb30cd59856253a9227/raw/coverage.json)
-[![Issues](https://img.shields.io/github/issues/TeKrop/shooting-stars-meme-generator)](https://github.com/TeKrop/shooting-stars-meme-generator/issues)
-[![License: MIT](https://img.shields.io/github/license/TeKrop/shooting-stars-meme-generator)](https://github.com/TeKrop/shooting-stars-meme-generator/blob/main/LICENSE)
+![Coverage](https://shields.tekrop.fr/endpoint?url=https://gist.githubusercontent.com/TeKrop/b345b1863b0bfcb30cd59856253a9227/raw/coverage.json)
+[![Issues](https://shields.tekrop.fr/github/issues/TeKrop/shooting-stars-meme-generator)](https://github.com/TeKrop/shooting-stars-meme-generator/issues)
+[![License: MIT](https://shields.tekrop.fr/github/license/TeKrop/shooting-stars-meme-generator)](https://github.com/TeKrop/shooting-stars-meme-generator/blob/main/LICENSE)
 
 ![Shooting Stars Meme Generator](client/public/img/preview.png)
 
