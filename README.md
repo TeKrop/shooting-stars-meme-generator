@@ -10,38 +10,58 @@
 
 ## Table of contents
 * [✨ Demo](#-demo)
-* [💽 Installation](#-installation)
+* [🚀 Quick start](#-quick-start)
+* [🔧 Configuration](#-configuration)
 * [🐋 Docker](#-docker)
+* [💽 Manual install](#-manual-install)
 * [🤝 Contributing](#-contributing)
 * [📝 License](#-license)
 
 ## ✨ [Demo](https://shooting-stars.tekrop.fr)
 
-You can see and use a live version of the service here : https://shooting-stars.tekrop.fr/. If you want to use the service, and you have the possibility to host your own instance, please do it (at least for production environment), in order to not overload the live version i'm hosting.
+You can see and use a live version of the service here : https://shooting-stars.tekrop.fr/. If you want to use the service, and you have the possibility to host your own instance, please do it (at least for production environment), in order to not overload the live version I'm hosting.
 
-## 💽 Installation
+## 🚀 Quick start
+
+Everything runs through Docker via [`just`](https://github.com/casey/just) — no local Bun/Node install needed:
 
 ```sh
-cp .env.dist .env # optional, adjust HASH_LENGTH if needed (APP_PORT/UPLOADS_DIR/UPLOAD_RETENTION_DAYS are Docker-only, see docker-compose.yml)
+just up       # build the image, then start it (production mode)
+just dev      # ...or run in dev mode instead, with live HMR (bun --hot)
+```
+
+Commands you'll use while working on the project:
+
+```sh
+just check    # type-check (tsc --noEmit) + lint/format-check (biome)
+just format   # auto-fix lint/format issues
+just test     # run the test suite (bun:test)
+just shell    # open a shell inside the app container
+just down     # stop and remove containers
+just --list   # see all available commands
+```
+
+## 🔧 Configuration
+
+All settings are optional and have sane defaults — copy [`.env.dist`](.env.dist) to `.env` and adjust as needed:
+
+| Variable                | Default                       | Used by               | Description                                                                                        |
+| ------------------------ | ------------------------------ | ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| `APP_PORT`               | `9595`                         | Docker only            | Host port the app is published on. The app itself always listens on `9595` inside the container.  |
+| `HASH_LENGTH`            | `5`                            | App                    | Length of the random hash used in uploaded images' URLs.                                          |
+| `UPLOADS_DIR`            | `/tmp/shooting-stars-uploads`  | Docker only            | Host path bind-mounted to the container's uploads directory. **Set this to a real persistent path in production** — the default is an ephemeral, low-surprise placeholder. |
+| `UPLOAD_RETENTION_DAYS`  | `30`                           | Docker only (cleanup)  | How many days an uploaded file is kept before the cleanup service deletes it.                      |
+
+`NODE_ENV` is intentionally not configurable via `.env` — it's fixed per Docker build stage (dev vs. prod) in the `Dockerfile`.
+
+## 💽 Manual install
+
+Without Docker, install [Bun](https://bun.com) locally and run the app directly:
+
+```sh
+cp .env.dist .env # optional, see Configuration above
 bun install
 bun server/server.ts
-```
-
-## 🐋 Docker
-
-### Compose
-```
-docker compose up -d
-```
-
-### Classic
-```
-docker build . -t tekrop/shooting-stars-meme-generator:latest
-docker run -d \
-	--name shooting-stars-meme-generator \
-	-p 80:9595 \
-	--volume /local_path_to_uploads:/app/uploads \
-	tekrop/shooting-stars-meme-generator
 ```
 
 ## 🤝 Contributing
