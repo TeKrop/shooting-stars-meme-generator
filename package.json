@@ -1,6 +1,6 @@
 {
     "name": "shooting-stars",
-    "version": "1.2.0",
+    "version": "2.0.0",
     "description": "Shooting Stars Meme Generator",
     "main": "server/server.ts",
     "scripts": {

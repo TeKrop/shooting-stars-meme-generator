@@ -46,6 +46,11 @@ test:
     @echo "Running tests..."
     {{ docker_compose }} --profile dev run --rm bun-dev bun test
 
+# run the test suite with a coverage report (text)
+test-coverage:
+    @echo "Running tests with coverage..."
+    {{ docker_compose }} --profile dev run --rm bun-dev bun test --coverage
+
 # build & run Shooting Stars application (production mode)
 up: build start
 

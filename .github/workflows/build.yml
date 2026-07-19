@@ -1,0 +1,84 @@
+name: "Build"
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    name: check, lint & test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install just
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y just
+
+      - name: Type-check & lint (tsc + biome)
+        run: just check
+
+      - name: Run tests with coverage
+        run: |
+          just test-coverage | tee coverage.txt
+          PERCENT=$(grep "All files" coverage.txt | awk -F'|' '{gsub(/ /,"",$3); print $3}')
+          echo "COVERAGE=$PERCENT" >> "$GITHUB_ENV"
+
+      - name: Update test coverage badge
+        if: github.event_name == 'push'
+        uses: schneegans/dynamic-badges-action@v1.8.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: b345b1863b0bfcb30cd59856253a9227
+          filename: coverage.json
+          label: coverage
+          message: ${{ env.COVERAGE }}%
+          minColorRange: 50
+          maxColorRange: 90
+          valColorRange: ${{ env.COVERAGE }}
+
+  docker-startup-check:
+    name: Docker startup check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install just
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y just
+
+      - name: Build and start the app
+        run: just up
+
+      - name: Wait for all containers to be healthy
+        run: |
+          tries=0
+          max=24
+          while [ "$(docker ps --filter health=starting --format '{{.ID}}' | wc -l)" -gt 0 ]; do
+            tries=$((tries+1))
+            if [ "$tries" -ge "$max" ]; then
+              echo "Timed out waiting for healthy containers" >&2
+              docker ps
+              exit 1
+            fi
+            sleep 5
+          done
+          unhealthy=$(docker ps --filter 'health=unhealthy' -q)
+          if [ -n "$unhealthy" ]; then
+            echo "Unhealthy containers detected!" >&2
+            docker ps
+            exit 1
+          fi
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Tear down containers
+        run: just down

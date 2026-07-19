@@ -1,0 +1,55 @@
+name: "Release & Deploy"
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    name: Release with semantic-release
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-release-${{ github.ref_name }}
+      cancel-in-progress: false
+
+    permissions:
+      contents: write
+
+    env:
+      GIT_COMMITTER_NAME: "github-actions"
+      GIT_COMMITTER_EMAIL: "actions@users.noreply.github.com"
+      GIT_AUTHOR_NAME: "github-actions"
+      GIT_AUTHOR_EMAIL: "actions@users.noreply.github.com"
+
+    steps:
+      - name: Setup | Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Action | Semantic Version Release
+        id: release
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    name: Deploy on VPS
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            bash "${{ secrets.DEPLOY_SCRIPT_PATH }}"
