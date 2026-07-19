@@ -74,16 +74,16 @@ function serveFrom(dir: string, prefix: string) {
 // `HASH_PATTERN` must be checked first: an unvalidated hash could otherwise
 // contain '../' and escape `uploadsDir`.
 const HASH_PATTERN = /^[a-zA-Z0-9]+$/;
-const KNOWN_EXTENSIONS = [...new Set(Object.values(EXTENSION_BY_MIME))];
+const KNOWN_EXTENSIONS = Object.values(EXTENSION_BY_MIME);
+const KNOWN_SUFFIXES = ['', ...KNOWN_EXTENSIONS.map((ext) => `.${ext}`)];
 
 async function resolveUpload(hash: string): Promise<string | undefined> {
     if (!HASH_PATTERN.test(hash)) return undefined;
-    for (const ext of KNOWN_EXTENSIONS) {
-        const path = `${uploadsDir}/${hash}.${ext}`;
+    for (const suffix of KNOWN_SUFFIXES) {
+        const path = `${uploadsDir}/${hash}${suffix}`;
         if (await Bun.file(path).exists()) return path;
     }
-    const bare = `${uploadsDir}/${hash}`;
-    return (await Bun.file(bare).exists()) ? bare : undefined;
+    return undefined;
 }
 
 // pre-fix uploads were stored bare (no extension), so Bun can't infer their
