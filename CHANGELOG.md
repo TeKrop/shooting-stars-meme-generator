@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.2.0...v2.3.0) (2026-07-19)
+
+
+### Features
+
+* preview, crop, and transparency editing before upload ([#22](https://github.com/TeKrop/shooting-stars-meme-generator/issues/22)) ([ddef516](https://github.com/TeKrop/shooting-stars-meme-generator/commit/ddef51638f21bbafce91f0be35a6ede04340516f))
+
 # [2.2.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.1.0...v2.2.0) (2026-07-19)
 
 
