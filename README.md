@@ -73,8 +73,12 @@ Contributions, issues and feature requests are welcome!
 Feel free to check [issues page](https://github.com/TeKrop/shooting-stars-meme-generator/issues).
 
 Before opening a PR:
+
+**Local checks**
 * run `just check` (type-check + lint) and `just test` locally — CI runs the same checks on every PR
-* write commit messages following [Conventional Commits](https://www.conventionalcommits.org/) (`type(scope): subject`, e.g. `fix: correct upload hash length`, `feat: add drag-and-drop upload`). This isn't just style: releases are automated with [semantic-release](https://semantic-release.gitbook.io/), which parses commit types to decide the version bump and to generate `CHANGELOG.md` — a non-conventional commit message won't break the build, but it'll be silently skipped when the changelog/version are generated.
+
+**Commit messages**
+* follow [Conventional Commits](https://www.conventionalcommits.org/) (`type(scope): subject`, e.g. `fix: correct upload hash length`, `feat: add drag-and-drop upload`) — this drives automated releases, see [CLAUDE.md § Contributing](CLAUDE.md#contributing) for details
 
 ## 📝 License
 
