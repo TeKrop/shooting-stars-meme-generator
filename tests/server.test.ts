@@ -109,6 +109,19 @@ describe('GET /uploads/*', () => {
         const res = await fetch(new URL('/uploads/%2A', server.url));
         expect(res.status).toBe(404);
     });
+
+    test('sniffs the right Content-Type for a legacy bare-file (no extension) SVG', async () => {
+        const hash = 'legacySvg';
+        await Bun.write(
+            `${import.meta.dir}/../uploads/${hash}`,
+            '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+        );
+        uploadedHashes.push(hash);
+
+        const res = await fetch(new URL(`/uploads/${hash}`, server.url));
+        expect(res.status).toBe(200);
+        expect(res.headers.get('Content-Type')).toBe('image/svg+xml');
+    });
 });
 
 describe('GET /img/*', () => {

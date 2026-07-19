@@ -86,6 +86,24 @@ async function resolveUpload(hash: string): Promise<string | undefined> {
     return (await Bun.file(bare).exists()) ? bare : undefined;
 }
 
+// pre-fix uploads were stored bare (no extension), so Bun can't infer their
+// Content-Type on serve — peek at the bytes to at least recognize SVGs,
+// since that's the one format browsers refuse to render inline without the
+// correct header (raster formats already get rendered via the browser's own
+// sniffing regardless of Content-Type). Only called for bare files, which
+// is a fixed, shrinking set — not on every request.
+const SVG_ROOT_TAG = /<svg[\s>]/i;
+
+async function sniffLegacyContentType(
+    file: ReturnType<typeof Bun.file>,
+): Promise<string | undefined> {
+    const head = await file
+        .slice(0, 1024)
+        .text()
+        .catch(() => '');
+    return SVG_ROOT_TAG.test(head) ? 'image/svg+xml' : undefined;
+}
+
 const server = Bun.serve({
     port: HTTP_PORT,
     routes: {
@@ -115,15 +133,22 @@ const server = Bun.serve({
 
         '/uploads/*': async (req) => {
             const url = new URL(req.url);
-            const path = await resolveUpload(
-                url.pathname.slice('/uploads/'.length),
-            );
+            const hash = url.pathname.slice('/uploads/'.length);
+            const path = await resolveUpload(hash);
             log(path ? 'served' : '404', url.pathname);
-            return withSecurityHeaders(
-                path
-                    ? new Response(Bun.file(path))
-                    : new Response('Not Found', { status: 404 }),
-            );
+            if (!path) {
+                return withSecurityHeaders(
+                    new Response('Not Found', { status: 404 }),
+                );
+            }
+
+            const file = Bun.file(path);
+            const response = new Response(file);
+            if (path === `${uploadsDir}/${hash}`) {
+                const sniffed = await sniffLegacyContentType(file);
+                if (sniffed) response.headers.set('Content-Type', sniffed);
+            }
+            return withSecurityHeaders(response);
         },
         // script.ts references this dynamically at runtime (not statically
         // analyzable, so the HTML bundler can't pick it up) — serve it directly
