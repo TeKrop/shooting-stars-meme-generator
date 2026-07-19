@@ -6,7 +6,7 @@ RUN bun install --frozen-lockfile
 
 # ---- dev: live HMR via `bun --hot`, source is bind-mounted at runtime ----
 FROM deps AS dev
-CMD ["bun", "--hot", "server.ts"]
+CMD ["bun", "--hot", "server/server.ts"]
 
 # ---- prod: source baked in, Bun bundles/minifies/caches assets lazily at runtime ----
 # NODE_ENV=production is the one signal Bun.serve checks to switch its HTML-import
@@ -14,7 +14,7 @@ CMD ["bun", "--hot", "server.ts"]
 # cached, hashed filenames) — genuinely load-bearing, not leftover branching.
 FROM deps
 ENV NODE_ENV=production
-COPY server.ts index.html tsconfig.json /app/
-COPY src /app/src/
-COPY public /app/public/
-CMD ["bun", "server.ts"]
+COPY tsconfig.json /app/
+COPY server /app/server/
+COPY client /app/client/
+CMD ["bun", "server/server.ts"]

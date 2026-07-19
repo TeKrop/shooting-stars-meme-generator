@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, test } from 'bun:test';
 import { unlink } from 'node:fs/promises';
-import server from '../server.ts';
+import server from '../server/server.ts';
 
 const uploadedHashes: string[] = [];
 

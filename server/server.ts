@@ -1,13 +1,13 @@
 import randomstring from 'randomstring';
-import index from './index.html';
+import index from '../client/index.html';
 
 // Fixed on purpose: the app always listens on 9595 inside the container (or
-// on the host, if run directly with `bun server.ts`). Only the Docker host-side
-// port mapping is configurable, via APP_PORT in docker-compose.yml.
+// on the host, if run directly with `bun server/server.ts`). Only the Docker
+// host-side port mapping is configurable, via APP_PORT in docker-compose.yml.
 const HTTP_PORT = 9595;
 const HASH_LENGTH = parseInt(process.env.HASH_LENGTH || '5', 10); // hash length for uploaded images URL
 
-const uploadsDir = `${import.meta.dir}/uploads`;
+const uploadsDir = `${import.meta.dir}/../uploads`;
 
 function log(...args: unknown[]) {
     console.log(`[${new Date().toISOString()}]`, ...args);
@@ -72,9 +72,9 @@ const server = Bun.serve({
         },
 
         '/uploads/*': serveFrom(uploadsDir, '/uploads/'),
-        // script.js references this dynamically at runtime (not statically
+        // script.ts references this dynamically at runtime (not statically
         // analyzable, so the HTML bundler can't pick it up) — serve it directly
-        '/img/*': serveFrom(`${import.meta.dir}/public/img`, '/img/'),
+        '/img/*': serveFrom(`${import.meta.dir}/../client/public/img`, '/img/'),
 
         // any other path is a client-side-routed uploaded-image hash: serve the same SPA shell
         '/*': index,

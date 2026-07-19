@@ -1,7 +1,7 @@
 services:
   bun:
     build: .
-    command: bun /app/server.ts
+    command: bun /app/server/server.ts
     env_file:
       - path: ./.env
         required: false
@@ -25,13 +25,11 @@ services:
       - "${APP_PORT:-9595}:9595"
     volumes:
       - ${UPLOADS_DIR:-/tmp/shooting-stars-uploads}:/app/uploads
-      - ./server.ts:/app/server.ts
-      - ./index.html:/app/index.html
+      - ./server:/app/server
+      - ./client:/app/client
       - ./tsconfig.json:/app/tsconfig.json
       - ./biome.json:/app/biome.json
       - ./.gitignore:/app/.gitignore
-      - ./src:/app/src
-      - ./public:/app/public
       - ./tests:/app/tests
     profiles:
       - dev
