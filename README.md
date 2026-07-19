@@ -1,8 +1,10 @@
 # 🐶 Shooting Stars Meme Generator
 
 ![Version](https://img.shields.io/github/package-json/v/TeKrop/shooting-stars-meme-generator)
+[![Build Status](https://github.com/TeKrop/shooting-stars-meme-generator/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/TeKrop/shooting-stars-meme-generator/actions/workflows/build.yml)
+![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/TeKrop/b345b1863b0bfcb30cd59856253a9227/raw/coverage.json)
 [![Issues](https://img.shields.io/github/issues/TeKrop/shooting-stars-meme-generator)](https://github.com/TeKrop/shooting-stars-meme-generator/issues)
-[![License: MIT](https://img.shields.io/github/license/TeKrop/shooting-stars-meme-generator)](https://github.com/TeKrop/shooting-stars-meme-generator/blob/master/LICENSE)
+[![License: MIT](https://img.shields.io/github/license/TeKrop/shooting-stars-meme-generator)](https://github.com/TeKrop/shooting-stars-meme-generator/blob/main/LICENSE)
 
 ![Shootings Star Meme Generator](https://files.tekrop.fr/shooting-stars.jpg)
 
@@ -74,7 +76,7 @@ Feel free to check [issues page](https://github.com/TeKrop/shooting-stars-meme-g
 
 Copyright © 2017-2026 [Valentin PORCHET](https://github.com/TeKrop).
 
-This project is [MIT](https://github.com/TeKrop/shooting-stars-meme-generator/blob/master/LICENSE) licensed.
+This project is [MIT](https://github.com/TeKrop/shooting-stars-meme-generator/blob/main/LICENSE) licensed.
 
 ***
 _This README was generated with ❤️ by [readme-md-generator](https://github.com/kefranabg/readme-md-generator)_
