@@ -9,6 +9,23 @@ const HASH_LENGTH = parseInt(process.env.HASH_LENGTH || '5', 10); // hash length
 
 const uploadsDir = `${import.meta.dir}/../uploads`;
 
+// extension to store the upload under, so Bun can infer the right
+// Content-Type when serving it back — the public URL/hash stays bare
+// regardless (see resolveUpload below).
+const EXTENSION_BY_MIME: Record<string, string> = {
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'image/svg+xml': 'svg',
+    'image/bmp': 'bmp',
+    'image/avif': 'avif',
+    'image/x-icon': 'ico',
+    'image/tiff': 'tiff',
+    'image/heic': 'heic',
+    'image/heif': 'heif',
+};
+
 function log(...args: unknown[]) {
     console.log(`[${new Date().toISOString()}]`, ...args);
 }
@@ -48,6 +65,45 @@ function serveFrom(dir: string, prefix: string) {
     };
 }
 
+// uploads are stored on disk as `<hash>.<ext>` (see '/upload' below) but
+// served from the bare hash, so resolve the real filename by checking the
+// handful of extensions we actually write (plus the bare name, for the
+// unrecognized-MIME-type fallback in '/upload') — a fixed set of direct
+// stats, not a directory scan, so this stays O(1) regardless of how many
+// files are in `uploadsDir`.
+// `HASH_PATTERN` must be checked first: an unvalidated hash could otherwise
+// contain '../' and escape `uploadsDir`.
+const HASH_PATTERN = /^[a-zA-Z0-9]+$/;
+const KNOWN_EXTENSIONS = Object.values(EXTENSION_BY_MIME);
+const KNOWN_SUFFIXES = ['', ...KNOWN_EXTENSIONS.map((ext) => `.${ext}`)];
+
+async function resolveUpload(hash: string): Promise<string | undefined> {
+    if (!HASH_PATTERN.test(hash)) return undefined;
+    for (const suffix of KNOWN_SUFFIXES) {
+        const path = `${uploadsDir}/${hash}${suffix}`;
+        if (await Bun.file(path).exists()) return path;
+    }
+    return undefined;
+}
+
+// pre-fix uploads were stored bare (no extension), so Bun can't infer their
+// Content-Type on serve — peek at the bytes to at least recognize SVGs,
+// since that's the one format browsers refuse to render inline without the
+// correct header (raster formats already get rendered via the browser's own
+// sniffing regardless of Content-Type). Only called for bare files, which
+// is a fixed, shrinking set — not on every request.
+const SVG_ROOT_TAG = /<svg[\s>]/i;
+
+async function sniffLegacyContentType(
+    file: ReturnType<typeof Bun.file>,
+): Promise<string | undefined> {
+    const head = await file
+        .slice(0, 1024)
+        .text()
+        .catch(() => '');
+    return SVG_ROOT_TAG.test(head) ? 'image/svg+xml' : undefined;
+}
+
 const server = Bun.serve({
     port: HTTP_PORT,
     routes: {
@@ -66,16 +122,34 @@ const server = Bun.serve({
                     return withSecurityHeaders(Response.redirect('/', 303));
                 }
 
-                const filename = randomstring.generate(HASH_LENGTH);
-                await Bun.write(`${uploadsDir}/${filename}`, file);
-                log('upload OK:', filename, file.type, `${file.size} bytes`);
-                return withSecurityHeaders(
-                    Response.redirect(`/${filename}`, 303),
-                );
+                const hash = randomstring.generate(HASH_LENGTH);
+                const ext = EXTENSION_BY_MIME[file.type];
+                const storedName = ext ? `${hash}.${ext}` : hash;
+                await Bun.write(`${uploadsDir}/${storedName}`, file);
+                log('upload OK:', storedName, file.type, `${file.size} bytes`);
+                return withSecurityHeaders(Response.redirect(`/${hash}`, 303));
             },
         },
 
-        '/uploads/*': serveFrom(uploadsDir, '/uploads/'),
+        '/uploads/*': async (req) => {
+            const url = new URL(req.url);
+            const hash = url.pathname.slice('/uploads/'.length);
+            const path = await resolveUpload(hash);
+            log(path ? 'served' : '404', url.pathname);
+            if (!path) {
+                return withSecurityHeaders(
+                    new Response('Not Found', { status: 404 }),
+                );
+            }
+
+            const file = Bun.file(path);
+            const response = new Response(file);
+            if (path === `${uploadsDir}/${hash}`) {
+                const sniffed = await sniffLegacyContentType(file);
+                if (sniffed) response.headers.set('Content-Type', sniffed);
+            }
+            return withSecurityHeaders(response);
+        },
         // script.ts references this dynamically at runtime (not statically
         // analyzable, so the HTML bundler can't pick it up) — serve it directly
         '/img/*': serveFrom(`${import.meta.dir}/../client/public/img`, '/img/'),
