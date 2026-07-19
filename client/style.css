@@ -63,6 +63,12 @@ video#video {
     height: auto;
     z-index: -100;
     transform: translateX(-50%) translateY(-50%);
+    opacity: 1;
+    transition: opacity 1s ease;
+
+    &.fade-out {
+        opacity: 0;
+    }
 }
 
 div#pictures-container {
