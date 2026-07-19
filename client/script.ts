@@ -1,7 +1,5 @@
 import { initPreviewDialog } from './preview';
 
-initPreviewDialog();
-
 // pictures
 const picturesContainer = document.getElementById('pictures-container')!;
 const nbPictures = 6;
@@ -33,6 +31,22 @@ let animationOnGoing = false;
 // init animation
 restartAnimation();
 
+initPreviewDialog(applyUploadedImage);
+
+/**
+ * Swaps in a freshly uploaded image without a full page reload: updates the
+ * pictures' src, updates the URL to match (so the link stays shareable),
+ * and launches the animation right away so the upload feels instant.
+ */
+function applyUploadedImage(hash: string) {
+    const src = `uploads/${hash}`;
+    for (let i = 1; i <= nbPictures; i++) {
+        (document.getElementById(`pict${i}`) as HTMLImageElement).src = src;
+    }
+    history.pushState(null, '', `/${hash}`);
+    startAnimation();
+}
+
 /**
  * Restart the event (automatic if desktop, manually if mobile)
  */
@@ -51,8 +65,11 @@ function showLaunchPrompt() {
     tapToPlay.style.display = 'block';
     if (video.readyState >= video.HAVE_CURRENT_DATA) {
         tapToPlay.innerHTML = `<p>${tapToPlayText}</p>`;
-        window.addEventListener('touchend', startAnimation);
-        window.addEventListener('click', startAnimation);
+        // scoped to the prompt itself, not the whole page — only clicking/
+        // tapping this specific element launches the animation (being a
+        // real <button> also gets Enter/Space handling for free)
+        tapToPlay.addEventListener('touchend', startAnimation);
+        tapToPlay.addEventListener('click', startAnimation);
     } else {
         tapToPlay.innerHTML = '<p>⌛ Loading…</p>';
         video.addEventListener('loadeddata', showLaunchPrompt, {
@@ -68,20 +85,11 @@ type AnimationStage = {
 
 /**
  * Start the shooting stars animation
- * @param  e  JS event
  */
-function startAnimation(e: Event) {
+function startAnimation() {
     if (animationOnGoing) return;
 
-    // if we clicked on a link, a button, or inside the preview dialog, don't start
-    if (
-        ['A', 'INPUT', 'LABEL'].includes((e.target as HTMLElement).tagName) ||
-        (e.target as HTMLElement).closest('#preview-dialog')
-    )
-        return;
-
-    (document.getElementById('tap-to-play') as HTMLElement).style.display =
-        'none';
+    tapToPlay.style.display = 'none';
     video.style.display = 'block';
 
     // animation is starting

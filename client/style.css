@@ -23,12 +23,17 @@ body {
     left: 50%;
 
     transform: translate(-50%, -50%);
-    border: 3px solid var(--color-ink);
+    border: 3px solid var(--color-cyan);
     border-radius: 12px;
     padding: 20px 32px;
     background: rgba(17, 17, 22, 0.55);
     box-shadow: 4px 4px 0 var(--color-ink);
     animation: pulse-invite 1.8s ease-in-out infinite;
+    cursor: pointer;
+    transition:
+        box-shadow 0.15s ease,
+        background 0.2s ease,
+        filter 0.15s ease;
 
     color: var(--color-cream);
     font-family: sans-serif;
@@ -40,6 +45,24 @@ body {
 
     p {
         margin: 0;
+    }
+
+    /* not the `transform` property — that's owned by the pulse animation
+       above, and a static hover/active transform would just get overridden
+       every frame while it's running */
+    &:hover {
+        background: rgba(17, 17, 22, 0.75);
+        box-shadow: 6px 6px 0 var(--color-ink);
+    }
+
+    &:active {
+        box-shadow: 0 0 0 var(--color-ink);
+        filter: brightness(0.9);
+    }
+
+    &:focus-visible {
+        outline: 3px solid var(--color-cyan);
+        outline-offset: 4px;
     }
 }
 
@@ -71,6 +94,10 @@ div#pictures-container {
     left: 0;
     width: 100%;
     height: 100%;
+    /* purely decorative, never interactive — without this it sits on top
+       of (and blocks clicks/hover on) #tap-to-play in the stacking order,
+       since it comes later in the DOM and neither has a z-index */
+    pointer-events: none;
 
     img {
         position: absolute;

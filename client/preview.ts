@@ -7,7 +7,7 @@ import { initTransparencyTools } from './transparency';
 // stays visible around the image instead of the image filling it edge-to-edge
 const IMAGE_FIT_SCALE = 0.8;
 
-export function initPreviewDialog() {
+export function initPreviewDialog(onUploaded: (hash: string) => void) {
     const fileInput = document.getElementById(
         'file-upload',
     ) as HTMLInputElement;
@@ -67,6 +67,12 @@ export function initPreviewDialog() {
         nextBtn.hidden = false;
         backBtn.hidden = true;
         uploadBtn.hidden = true;
+        // a previous upload in this same dialog session may have left these
+        // set — reset them so a fresh upload isn't stuck disabled/loading
+        uploadBtn.disabled = false;
+        uploadBtn.classList.remove('is-loading');
+        cancelBtn.disabled = false;
+        backBtn.disabled = false;
 
         cropper?.destroy();
         const thisCropper = new Cropper(previewImg, { container: cropArea });
@@ -146,7 +152,17 @@ export function initPreviewDialog() {
                 method: 'POST',
                 body: formData,
             });
-            window.location.assign(res.url);
+            // fetch already followed the 303, so this is the final URL —
+            // a bare '/' means the upload was rejected server-side, which
+            // has no hash to apply in place; fall back to a real navigation
+            // (matches what the server itself redirects to on rejection)
+            const hash = new URL(res.url).pathname.slice(1);
+            if (hash) {
+                previewDialog.close();
+                onUploaded(hash);
+            } else {
+                window.location.assign(res.url);
+            }
         } catch {
             uploadBtn.disabled = false;
             uploadBtn.classList.remove('is-loading');
