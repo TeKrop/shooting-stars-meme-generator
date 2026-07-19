@@ -153,13 +153,16 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
         editCanvas.width = canvas.width;
         editCanvas.height = canvas.height;
         editCtx.drawImage(canvas, 0, 0);
-        resetTransparencyTools();
 
         cropStep.hidden = true;
         editStep.hidden = false;
         nextBtn.hidden = true;
         backBtn.hidden = false;
         uploadBtn.hidden = false;
+
+        // must run after editStep is unhidden: the erase cursor is sized from
+        // the canvas's displayed rect, which is 0x0 while hidden
+        resetTransparencyTools();
     };
 
     backBtn.onclick = showCropStep;
