@@ -22,22 +22,8 @@ for (let i = nbPictures; i >= 1; i--) {
 const video = document.getElementById('video') as HTMLVideoElement;
 // set video volume to 5%
 video.volume = 0.05;
-// once the video has ended, fade it out then restart the animation
-video.addEventListener(
-    'ended',
-    () => {
-        video.classList.add('fade-out');
-        video.addEventListener(
-            'transitionend',
-            () => {
-                video.classList.remove('fade-out');
-                restartAnimation();
-            },
-            { once: true },
-        );
-    },
-    false,
-);
+// once the video has ended, restart the animation
+video.addEventListener('ended', restartAnimation, false);
 
 const tapToPlay = document.getElementById('tap-to-play') as HTMLElement;
 const tapToPlayText = '✦ Press to fly ✦';
