@@ -1,12 +1,48 @@
+# IMPORTANT: UPLOADS_DIR falls back to /tmp/shooting-stars-uploads if unset.
+# Production deployments MUST set UPLOADS_DIR in .env to the real persistent
+# host path — otherwise uploads silently start landing in an ephemeral
+# directory instead of wherever they were being served from before.
 services:
-  node:
+  bun:
     build: .
-    command: node /code/server.js
+    command: bun /app/server/server.ts
+    env_file:
+      - path: ./.env
+        required: false
     ports:
-      - "9595:9595"
+      - "${APP_PORT:-9595}:9595"
     volumes:
-      - /opt/tekrop/shooting-stars/uploads:/code/public/uploads
+      - ${UPLOADS_DIR:-/tmp/shooting-stars-uploads}:/app/uploads
     healthcheck:
       test: ["CMD-SHELL", "wget --spider --quiet http://0.0.0.0:9595 || exit 1"]
       interval: 5s
       timeout: 5s
+
+  bun-dev:
+    build:
+      context: .
+      target: dev
+    env_file:
+      - path: ./.env
+        required: false
+    ports:
+      - "${APP_PORT:-9595}:9595"
+    volumes:
+      - ${UPLOADS_DIR:-/tmp/shooting-stars-uploads}:/app/uploads
+      - ./server:/app/server
+      - ./client:/app/client
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./biome.json:/app/biome.json
+      - ./.gitignore:/app/.gitignore
+      - ./tests:/app/tests
+    profiles:
+      - dev
+
+  cleanup:
+    build: ./scripts
+    env_file:
+      - path: ./.env
+        required: false
+    volumes:
+      - ${UPLOADS_DIR:-/tmp/shooting-stars-uploads}:/uploads
+    restart: unless-stopped

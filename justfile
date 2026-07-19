@@ -2,10 +2,10 @@
 
 docker_compose := "docker compose"
 docker_run := docker_compose + " run \
-    --volume ${PWD}/package.json:/code/package.json \
-    --volume ${PWD}/package-lock.json:/code/package-lock.json \
+    --volume ${PWD}/package.json:/app/package.json \
+    --volume ${PWD}/bun.lock:/app/bun.lock \
     --rm \
-    node"
+    bun"
 
 # print recipe names and comments as help
 help:
@@ -21,10 +21,30 @@ start:
     @echo "Launching Shooting Stars (production mode)..."
     {{ docker_compose }} up -d
 
+# run Shooting Stars in dev mode (live HMR via `bun --hot`)
+dev:
+    @echo "Launching Shooting Stars (dev mode, Bun HMR)..."
+    {{ docker_compose }} --profile dev up bun-dev
+
 # access an interactive shell inside the app container
 shell:
-    @echo "Running shell on node container..."
+    @echo "Running shell on bun container..."
     {{ docker_run }} /bin/sh
+
+# type-check + lint/format-check the sources (bun runs .ts directly either way, this only checks)
+check:
+    @echo "Checking..."
+    {{ docker_compose }} --profile dev run --rm bun-dev bun run check
+
+# auto-fix lint/format issues (biome)
+format:
+    @echo "Formatting..."
+    {{ docker_compose }} --profile dev run --rm bun-dev bun run lint:fix
+
+# run the test suite (bun:test)
+test:
+    @echo "Running tests..."
+    {{ docker_compose }} --profile dev run --rm bun-dev bun test
 
 # build & run Shooting Stars application (production mode)
 up: build start
@@ -41,8 +61,8 @@ down_clean:
 
 # update lock file
 lock:
-    @echo "Updating package-lock.json..."
-    {{ docker_run }} npm install
+    @echo "Updating bun.lock..."
+    {{ docker_run }} bun install
 
 # clean up Docker environment
 clean: down_clean
