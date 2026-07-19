@@ -21,6 +21,9 @@ const EXTENSION_BY_MIME: Record<string, string> = {
     'image/bmp': 'bmp',
     'image/avif': 'avif',
     'image/x-icon': 'ico',
+    'image/tiff': 'tiff',
+    'image/heic': 'heic',
+    'image/heif': 'heif',
 };
 
 function log(...args: unknown[]) {
@@ -63,17 +66,21 @@ function serveFrom(dir: string, prefix: string) {
 }
 
 // uploads are stored on disk as `<hash>.<ext>` (see '/upload' below) but
-// served from the bare hash, so resolve the real filename via a glob.
-// `HASH_PATTERN` must be checked before the glob runs: an unvalidated hash
-// like `*` would otherwise match arbitrary files in `uploadsDir`, leaking
-// other users' uploads.
+// served from the bare hash, so resolve the real filename by checking the
+// handful of extensions we actually write (plus the bare name, for the
+// unrecognized-MIME-type fallback in '/upload') — a fixed set of direct
+// stats, not a directory scan, so this stays O(1) regardless of how many
+// files are in `uploadsDir`.
+// `HASH_PATTERN` must be checked first: an unvalidated hash could otherwise
+// contain '../' and escape `uploadsDir`.
 const HASH_PATTERN = /^[a-zA-Z0-9]+$/;
+const KNOWN_EXTENSIONS = [...new Set(Object.values(EXTENSION_BY_MIME))];
 
 async function resolveUpload(hash: string): Promise<string | undefined> {
     if (!HASH_PATTERN.test(hash)) return undefined;
-    const glob = new Bun.Glob(`${hash}.*`);
-    for await (const match of glob.scan({ cwd: uploadsDir })) {
-        return `${uploadsDir}/${match}`;
+    for (const ext of KNOWN_EXTENSIONS) {
+        const path = `${uploadsDir}/${hash}.${ext}`;
+        if (await Bun.file(path).exists()) return path;
     }
     const bare = `${uploadsDir}/${hash}`;
     return (await Bun.file(bare).exists()) ? bare : undefined;
