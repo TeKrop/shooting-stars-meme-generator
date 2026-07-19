@@ -70,4 +70,18 @@ describe('GET /uploads/*', () => {
         const res = await fetch(new URL('/uploads/does-not-exist', server.url));
         expect(res.status).toBe(404);
     });
+
+    test('sets security headers on the response', async () => {
+        const res = await fetch(new URL('/uploads/does-not-exist', server.url));
+        expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+        expect(res.headers.get('X-Frame-Options')).toBe('DENY');
+        expect(res.headers.get('Content-Security-Policy')).toBeTruthy();
+    });
+});
+
+describe('GET /img/*', () => {
+    test('serves the default doge image', async () => {
+        const res = await fetch(new URL('/img/doge.png', server.url));
+        expect(res.status).toBe(200);
+    });
 });

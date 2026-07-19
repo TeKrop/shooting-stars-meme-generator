@@ -24,7 +24,7 @@ You can see and use a live version of the service here : https://shooting-stars.
 ```sh
 cp .env.dist .env # optional, adjust HASH_LENGTH if needed (APP_PORT/UPLOADS_DIR/UPLOAD_RETENTION_DAYS are Docker-only, see docker-compose.yml)
 bun install
-bun server.ts
+bun server/server.ts
 ```
 
 ## 🐋 Docker

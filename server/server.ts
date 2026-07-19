@@ -29,7 +29,11 @@ function withSecurityHeaders(response: Response): Response {
     return response;
 }
 
-// serves a file from `dir`, stripping `prefix` off the request path
+// serves a file from `dir`, stripping `prefix` off the request path.
+// Safe against `../` traversal (tested with plain, percent-encoded, and
+// double-encoded variants) because `new URL().pathname` normalizes dot
+// segments per the WHATWG URL spec before we ever slice it — don't replace
+// this with raw `req.url` string matching without re-verifying that.
 function serveFrom(dir: string, prefix: string) {
     return async (req: Request): Promise<Response> => {
         const url = new URL(req.url);

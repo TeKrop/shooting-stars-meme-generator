@@ -1,3 +1,7 @@
+# IMPORTANT: UPLOADS_DIR falls back to /tmp/shooting-stars-uploads if unset.
+# Production deployments MUST set UPLOADS_DIR in .env to the real persistent
+# host path — otherwise uploads silently start landing in an ephemeral
+# directory instead of wherever they were being served from before.
 services:
   bun:
     build: .
