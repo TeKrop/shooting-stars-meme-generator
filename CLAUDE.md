@@ -142,3 +142,20 @@ project-level config (`Dockerfile`, `docker-compose.yml`, `justfile`,
 - The upload filter only checks MIME type (`image/*`), not file contents or extension.
 - The app always listens on `9595`; only the Docker host-side publish port (`APP_PORT` env var) can differ, and in the current compose setup is bound to localhost only.
 - Uploaded files older than `UPLOAD_RETENTION_DAYS` (default 30) are deleted daily by the `cleanup` compose service — see `scripts/` in Architecture above.
+
+## Contributing
+
+Commit messages **must** follow [Conventional Commits](https://www.conventionalcommits.org/)
+(`type(scope): subject`, e.g. `fix: correct upload hash length`) — this isn't
+just style. `.releaserc.json` runs `semantic-release` with the default
+`@semantic-release/commit-analyzer` (Angular preset) on every push to `main`
+via `.github/workflows/release.yaml`: it parses commit types to decide
+whether to cut a release and what version bump to apply (`fix:` → patch,
+`feat:` → minor, `BREAKING CHANGE:` footer or `!` → major, other types like
+`chore:`/`docs:`/`refactor:` → no release), then generates `CHANGELOG.md`
+entries from those same messages. A non-conventional commit message is
+silently ignored by the analyzer rather than erroring, so the practical
+failure mode is a change landing with no version bump/changelog entry, not
+a build break. Before opening a PR, run `just check`/`just test` locally
+(see Commands above) — CI (`.github/workflows/build.yml`) runs the same
+checks.
