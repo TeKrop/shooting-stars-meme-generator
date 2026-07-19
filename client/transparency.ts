@@ -57,12 +57,29 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
         updateHistoryButtons();
     };
 
+    // draws the brush outline as the canvas cursor itself, so hovering shows
+    // exactly what the next erase will cover (scaled from canvas pixels to
+    // displayed CSS pixels, since the canvas can be shown smaller than its
+    // backing resolution)
+    function updateEraseCursor() {
+        const radius = Number(eraseSizeInput.value);
+        const displayRadius =
+            (radius * canvas.getBoundingClientRect().width) / canvas.width;
+        const size = Math.ceil(displayRadius) * 2 + 2;
+        const center = size / 2;
+        const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}'><circle cx='${center}' cy='${center}' r='${displayRadius}' fill='none' stroke='white' stroke-width='1.5'/><circle cx='${center}' cy='${center}' r='${displayRadius}' fill='none' stroke='black' stroke-width='1' stroke-dasharray='3'/></svg>`;
+        canvas.style.cursor = `url("data:image/svg+xml,${encodeURIComponent(svg)}") ${center} ${center}, crosshair`;
+    }
+    eraseSizeInput.oninput = updateEraseCursor;
+
     function setTool(next: Tool) {
         tool = next;
         eraseBtn.setAttribute('aria-pressed', String(tool === 'erase'));
         pickBtn.setAttribute('aria-pressed', String(tool === 'pick'));
         eraseSizeControl.hidden = tool !== 'erase';
         pickToleranceControl.hidden = tool !== 'pick';
+        if (tool === 'erase') updateEraseCursor();
+        else canvas.style.cursor = 'crosshair';
     }
     eraseBtn.onclick = () => setTool('erase');
     pickBtn.onclick = () => setTool('pick');

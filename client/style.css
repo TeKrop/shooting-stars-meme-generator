@@ -370,6 +370,11 @@ dialog#preview-dialog {
     &[hidden] {
         display: none;
     }
+
+    & > .tagline {
+        font-size: 20px;
+        color: var(--color-orange-light);
+    }
 }
 
 #crop-area {
