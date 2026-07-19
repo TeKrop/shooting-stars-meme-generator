@@ -28,7 +28,7 @@ video.addEventListener('ended', restartAnimation, false);
 // if mobile, wait for user to tap before launching. else, start on page load
 if (/Mobi/i.test(navigator.userAgent) || /Android/i.test(navigator.userAgent)) {
     document.getElementById('tap-to-play')!.innerHTML =
-        '<p>Tap the screen to play :)</p>';
+        '<p>▶ Tap to launch</p>';
 }
 
 // boolean to know if animation is ongoing

@@ -1,4 +1,11 @@
 /** Main structure */
+:root {
+    --color-ink: #111116;
+    --color-cream: #fff8ec;
+    --color-orange: #f39c12;
+    --color-cyan: #2ee6d6;
+}
+
 html {
     overflow: hidden;
 }
@@ -14,13 +21,36 @@ body {
     position: fixed;
     top: 50%;
     left: 50%;
-    -webkit-transform: translate(-50%, -50%);
-    transform: translate(-50%, -50%);
 
-    color: white;
-    font-size: 4em;
-    text-align: center;
+    transform: translate(-50%, -50%);
+    border: 3px solid var(--color-ink);
+    border-radius: 12px;
+    padding: 20px 32px;
+    background: rgba(17, 17, 22, 0.55);
+    box-shadow: 4px 4px 0 var(--color-ink);
+    animation: pulse-invite 1.8s ease-in-out infinite;
+
+    color: var(--color-cream);
     font-family: sans-serif;
+    font-size: 4em;
+    font-weight: 800;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+
+    p {
+        margin: 0;
+    }
+}
+
+@keyframes pulse-invite {
+    0%,
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.04);
+    }
 }
 
 video#video {
@@ -67,15 +97,29 @@ div#pictures-container {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
     max-width: 260px;
+}
+
+.uploader-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    border: 3px solid var(--color-ink);
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: rgba(17, 17, 22, 0.55);
+    box-shadow: 4px 4px 0 var(--color-ink);
 }
 
 .tagline {
     margin: 0;
-    color: white;
+    color: var(--color-cream);
     font-family: sans-serif;
     font-size: 15px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
@@ -85,22 +129,30 @@ label {
 
     font-family: sans-serif;
     font-size: 18px;
+    font-weight: 700;
 
-    color: white;
+    color: var(--color-cream);
     text-align: center;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-    background: #f39c12;
-    border: 0;
+    background: var(--color-orange);
+    border: 3px solid var(--color-ink);
     border-radius: 6px;
-    border-bottom: 2px solid #e8930c;
     cursor: pointer;
-    box-shadow: inset 0 -2px #e8930c;
-    transition: background 0.2s ease;
+    box-shadow: 4px 4px 0 var(--color-ink);
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        background 0.2s ease;
 
     &:hover {
-        outline: none;
-        box-shadow: none;
         background: #f4b550;
+        transform: translate(-2px, -2px);
+        box-shadow: 6px 6px 0 var(--color-ink);
+    }
+
+    &:active {
+        transform: translate(4px, 4px);
+        box-shadow: 0 0 0 var(--color-ink);
     }
 }
 
@@ -108,17 +160,59 @@ input#file-upload {
     opacity: 0;
     position: absolute;
     z-index: -1;
+
+    &:focus-visible + label {
+        outline: 3px solid var(--color-cyan);
+        outline-offset: 4px;
+    }
 }
 
 footer {
-    color: white;
+    color: var(--color-cream);
     font-family: sans-serif;
+    font-size: 13px;
+    font-weight: 500;
     position: fixed;
-    bottom: 0;
+    bottom: 12px;
     left: 50%;
     transform: translate(-50%);
     text-align: center;
-    padding: 0 10px;
+    border: 3px solid var(--color-ink);
+    border-radius: 999px;
+    padding: 6px 16px;
+    background: rgba(17, 17, 22, 0.55);
+    box-shadow: 4px 4px 0 var(--color-ink);
+
+    a {
+        color: var(--color-cyan);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+
+        &:hover {
+            color: var(--color-cream);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--color-cyan);
+            outline-offset: 2px;
+            border-radius: 2px;
+        }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #tap-to-play {
+        animation: none;
+    }
+
+    label {
+        transition: none;
+
+        &:hover,
+        &:active {
+            transform: none;
+        }
+    }
 }
 
 @media (max-width: 480px) {
@@ -126,6 +220,10 @@ footer {
         top: 12px;
         left: 12px;
         max-width: 200px;
+    }
+
+    .uploader-card {
+        padding: 10px 12px;
     }
 
     .tagline {
@@ -137,8 +235,16 @@ footer {
         font-size: 15px;
     }
 
+    #tap-to-play {
+        max-width: 90vw;
+        font-size: 2.2em;
+        padding: 14px 20px;
+    }
+
     footer {
-        font-size: 12px;
+        font-size: 11px;
+        padding: 5px 12px;
+        bottom: 8px;
     }
 }
 
