@@ -1,4 +1,4 @@
-// preview dialog: crop the picked image (cropper.js) then optionally
+// preview dialog: crop the picked image (cropperjs) then optionally
 // erase/color-pick it to transparent, before actually uploading it
 import Cropper from 'cropperjs';
 import { initTransparencyTools } from './transparency';
@@ -10,7 +10,7 @@ const IMAGE_FIT_SCALE = 0.8;
 // matches the `error` query param the server redirects to '/' with (see
 // server.ts's '/upload' handler)
 const UPLOAD_ERROR_MESSAGES: Record<string, string> = {
-    invalid_type: "That doesn't look like a valid image. Please try again.",
+    invalid_type: 'Only PNG images are supported. Please try again.',
     too_large: 'This image is too large. Please try again with a smaller one.',
 };
 const DEFAULT_UPLOAD_ERROR = "Couldn't upload this image. Please try again.";

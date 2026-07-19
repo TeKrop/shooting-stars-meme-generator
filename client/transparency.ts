@@ -120,12 +120,17 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
             const p = canvasPoint(moveEvent);
             eraseAt(p.x, p.y);
         };
-        const onUp = () => {
+        // 'lostpointercapture' — rather than 'pointerup' alone — is what
+        // actually guarantees cleanup: it fires whenever capture ends for
+        // any reason (release, pointercancel from a browser gesture/palm
+        // rejection, programmatic release), so drag state can never get
+        // stuck with a dangling pointermove listener
+        const onLostCapture = () => {
             canvas.removeEventListener('pointermove', onMove);
-            canvas.removeEventListener('pointerup', onUp);
+            canvas.removeEventListener('lostpointercapture', onLostCapture);
         };
         canvas.addEventListener('pointermove', onMove);
-        canvas.addEventListener('pointerup', onUp);
+        canvas.addEventListener('lostpointercapture', onLostCapture);
     };
 
     updateHistoryButtons();

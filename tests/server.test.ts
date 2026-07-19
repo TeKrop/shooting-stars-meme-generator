@@ -86,6 +86,13 @@ describe('POST /upload', () => {
         // the uploaded-hash path serves the same SPA shell as '/'
         const page = await fetch(new URL(location, server.url));
         expect(page.status).toBe(200);
+
+        // and the actual uploaded file is stored and served back correctly
+        const uploadedFile = await fetch(
+            new URL(`/uploads${location}`, server.url),
+        );
+        expect(uploadedFile.status).toBe(200);
+        expect(uploadedFile.headers.get('Content-Type')).toBe('image/png');
     });
 
     test('rejects a PNG-typed Blob uploaded under a non-.png filename', async () => {
@@ -172,6 +179,7 @@ describe('GET /uploads/*', () => {
 
         const res = await fetch(new URL(`/uploads/${hash}`, server.url));
         expect(res.status).toBe(200);
+        expect(res.headers.get('Content-Type')).toBe('image/jpeg');
     });
 });
 

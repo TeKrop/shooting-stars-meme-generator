@@ -31,6 +31,13 @@ const tapToPlayText =
 // of leaving them to fire later and stomp on the new run's classes
 let animationTimeouts: ReturnType<typeof setTimeout>[] = [];
 
+// showLaunchPrompt() re-runs on every restart (video 'ended', or a fresh
+// upload) — this guards against re-attaching the click/touchend listeners
+// each time, which would otherwise fire startAnimation multiple times per
+// tap. Can't just attach them once unconditionally at module load instead:
+// they're deliberately gated behind the video being ready (see below).
+let launchListenersAttached = false;
+
 // init animation
 restartAnimation();
 
@@ -70,8 +77,11 @@ function showLaunchPrompt() {
         // scoped to the prompt itself, not the whole page — only clicking/
         // tapping this specific element launches the animation (being a
         // real <button> also gets Enter/Space handling for free)
-        tapToPlay.addEventListener('touchend', startAnimation);
-        tapToPlay.addEventListener('click', startAnimation);
+        if (!launchListenersAttached) {
+            tapToPlay.addEventListener('touchend', startAnimation);
+            tapToPlay.addEventListener('click', startAnimation);
+            launchListenersAttached = true;
+        }
     } else {
         tapToPlay.innerHTML = '<p>⌛ Loading…</p>';
         video.addEventListener('loadeddata', showLaunchPrompt, {
