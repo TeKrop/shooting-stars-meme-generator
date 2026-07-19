@@ -25,11 +25,8 @@ video.volume = 0.05;
 // once the video has ended, restart the animation
 video.addEventListener('ended', restartAnimation, false);
 
-// if mobile, wait for user to tap before launching. else, start on page load
-if (/Mobi/i.test(navigator.userAgent) || /Android/i.test(navigator.userAgent)) {
-    document.getElementById('tap-to-play')!.innerHTML =
-        '<p>▶ Tap to launch</p>';
-}
+const tapToPlay = document.getElementById('tap-to-play') as HTMLElement;
+const tapToPlayText = '✦ Press to fly ✦';
 
 // boolean to know if animation is ongoing
 let animationOnGoing = false;
@@ -43,15 +40,26 @@ restartAnimation();
 function restartAnimation() {
     // animation is terminated
     animationOnGoing = false;
-
-    // show the text
-    (document.getElementById('tap-to-play') as HTMLElement).style.display =
-        'block';
     video.style.display = 'none';
+    showLaunchPrompt();
+}
 
-    // we user finished to tap
-    window.addEventListener('touchend', startAnimation);
-    window.addEventListener('click', startAnimation);
+/**
+ * Don't allow launching until the video is actually loaded, so the
+ * animation can never run ahead of a video that isn't ready yet
+ */
+function showLaunchPrompt() {
+    tapToPlay.style.display = 'block';
+    if (video.readyState >= video.HAVE_CURRENT_DATA) {
+        tapToPlay.innerHTML = `<p>${tapToPlayText}</p>`;
+        window.addEventListener('touchend', startAnimation);
+        window.addEventListener('click', startAnimation);
+    } else {
+        tapToPlay.innerHTML = '<p>⌛ Loading…</p>';
+        video.addEventListener('loadeddata', showLaunchPrompt, {
+            once: true,
+        });
+    }
 }
 
 type AnimationStage = {
