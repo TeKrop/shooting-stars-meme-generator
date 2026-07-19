@@ -57,11 +57,38 @@ describe('POST /upload', () => {
         expect(res.status).toBe(303);
         const location = res.headers.get('location')!;
         expect(location).toMatch(/^\/\w{5}$/);
-        uploadedHashes.push(location.slice(1));
+        uploadedHashes.push(`${location.slice(1)}.png`);
 
         // the uploaded-hash path serves the same SPA shell as '/'
         const page = await fetch(new URL(location, server.url));
         expect(page.status).toBe(200);
+    });
+
+    test('stores an SVG upload with the right Content-Type on serve', async () => {
+        const form = new FormData();
+        form.set(
+            'file-upload',
+            new Blob(['<svg xmlns="http://www.w3.org/2000/svg"></svg>'], {
+                type: 'image/svg+xml',
+            }),
+            'test.svg',
+        );
+
+        const res = await fetch(new URL('/upload', server.url), {
+            method: 'POST',
+            body: form,
+            redirect: 'manual',
+        });
+
+        expect(res.status).toBe(303);
+        const location = res.headers.get('location')!;
+        expect(location).toMatch(/^\/\w{5}$/);
+        const hash = location.slice(1);
+        uploadedHashes.push(`${hash}.svg`);
+
+        const served = await fetch(new URL(`/uploads${location}`, server.url));
+        expect(served.status).toBe(200);
+        expect(served.headers.get('Content-Type')).toBe('image/svg+xml');
     });
 });
 
@@ -76,6 +103,11 @@ describe('GET /uploads/*', () => {
         expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
         expect(res.headers.get('X-Frame-Options')).toBe('DENY');
         expect(res.headers.get('Content-Security-Policy')).toBeTruthy();
+    });
+
+    test('rejects a glob-metacharacter hash instead of leaking a file', async () => {
+        const res = await fetch(new URL('/uploads/%2A', server.url));
+        expect(res.status).toBe(404);
     });
 });
 

@@ -9,6 +9,20 @@ const HASH_LENGTH = parseInt(process.env.HASH_LENGTH || '5', 10); // hash length
 
 const uploadsDir = `${import.meta.dir}/../uploads`;
 
+// extension to store the upload under, so Bun can infer the right
+// Content-Type when serving it back — the public URL/hash stays bare
+// regardless (see resolveUpload below).
+const EXTENSION_BY_MIME: Record<string, string> = {
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'image/svg+xml': 'svg',
+    'image/bmp': 'bmp',
+    'image/avif': 'avif',
+    'image/x-icon': 'ico',
+};
+
 function log(...args: unknown[]) {
     console.log(`[${new Date().toISOString()}]`, ...args);
 }
@@ -48,6 +62,23 @@ function serveFrom(dir: string, prefix: string) {
     };
 }
 
+// uploads are stored on disk as `<hash>.<ext>` (see '/upload' below) but
+// served from the bare hash, so resolve the real filename via a glob.
+// `HASH_PATTERN` must be checked before the glob runs: an unvalidated hash
+// like `*` would otherwise match arbitrary files in `uploadsDir`, leaking
+// other users' uploads.
+const HASH_PATTERN = /^[a-zA-Z0-9]+$/;
+
+async function resolveUpload(hash: string): Promise<string | undefined> {
+    if (!HASH_PATTERN.test(hash)) return undefined;
+    const glob = new Bun.Glob(`${hash}.*`);
+    for await (const match of glob.scan({ cwd: uploadsDir })) {
+        return `${uploadsDir}/${match}`;
+    }
+    const bare = `${uploadsDir}/${hash}`;
+    return (await Bun.file(bare).exists()) ? bare : undefined;
+}
+
 const server = Bun.serve({
     port: HTTP_PORT,
     routes: {
@@ -66,16 +97,27 @@ const server = Bun.serve({
                     return withSecurityHeaders(Response.redirect('/', 303));
                 }
 
-                const filename = randomstring.generate(HASH_LENGTH);
-                await Bun.write(`${uploadsDir}/${filename}`, file);
-                log('upload OK:', filename, file.type, `${file.size} bytes`);
-                return withSecurityHeaders(
-                    Response.redirect(`/${filename}`, 303),
-                );
+                const hash = randomstring.generate(HASH_LENGTH);
+                const ext = EXTENSION_BY_MIME[file.type];
+                const storedName = ext ? `${hash}.${ext}` : hash;
+                await Bun.write(`${uploadsDir}/${storedName}`, file);
+                log('upload OK:', storedName, file.type, `${file.size} bytes`);
+                return withSecurityHeaders(Response.redirect(`/${hash}`, 303));
             },
         },
 
-        '/uploads/*': serveFrom(uploadsDir, '/uploads/'),
+        '/uploads/*': async (req) => {
+            const url = new URL(req.url);
+            const path = await resolveUpload(
+                url.pathname.slice('/uploads/'.length),
+            );
+            log(path ? 'served' : '404', url.pathname);
+            return withSecurityHeaders(
+                path
+                    ? new Response(Bun.file(path))
+                    : new Response('Not Found', { status: 404 }),
+            );
+        },
         // script.ts references this dynamically at runtime (not statically
         // analyzable, so the HTML bundler can't pick it up) — serve it directly
         '/img/*': serveFrom(`${import.meta.dir}/../client/public/img`, '/img/'),
