@@ -1,3 +1,10 @@
+## [2.3.1](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.3.0...v2.3.1) (2026-07-19)
+
+
+### Bug Fixes
+
+* modernize CTA buttons, tighten title, fix lint warnings ([#23](https://github.com/TeKrop/shooting-stars-meme-generator/issues/23)) ([97b48fe](https://github.com/TeKrop/shooting-stars-meme-generator/commit/97b48fee44c8c4d2d1f75351d44e1090127e9164))
+
 # [2.3.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.2.0...v2.3.0) (2026-07-19)
 
 
