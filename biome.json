@@ -18,7 +18,8 @@
         "rules": {
             "preset": "recommended",
             "style": {
-                "noNonNullAssertion": "off"
+                "noNonNullAssertion": "off",
+                "noDescendingSpecificity": "off"
             },
             "a11y": {
                 "useMediaCaption": "off"
