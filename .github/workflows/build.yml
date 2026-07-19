@@ -30,7 +30,7 @@ jobs:
 
       - name: Update test coverage badge
         if: github.event_name == 'push'
-        uses: schneegans/dynamic-badges-action@v1.8.0
+        uses: schneegans/dynamic-badges-action@v1.9.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
           gistID: b345b1863b0bfcb30cd59856253a9227
