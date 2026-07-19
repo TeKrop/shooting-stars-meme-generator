@@ -1,7 +1,6 @@
-// file uploader. When file has been uploaded, submit the form
-(document.getElementById('file-upload') as HTMLInputElement).onchange = () => {
-    (document.getElementById('upload-form') as HTMLFormElement).submit();
-};
+import { initPreviewDialog } from './preview';
+
+initPreviewDialog();
 
 // pictures
 const picturesContainer = document.getElementById('pictures-container')!;
@@ -74,8 +73,11 @@ type AnimationStage = {
 function startAnimation(e: Event) {
     if (animationOnGoing) return;
 
-    // if we clicked on a link or a button, don't start
-    if (['A', 'INPUT', 'LABEL'].includes((e.target as HTMLElement).tagName))
+    // if we clicked on a link, a button, or inside the preview dialog, don't start
+    if (
+        ['A', 'INPUT', 'LABEL'].includes((e.target as HTMLElement).tagName) ||
+        (e.target as HTMLElement).closest('#preview-dialog')
+    )
         return;
 
     (document.getElementById('tap-to-play') as HTMLElement).style.display =

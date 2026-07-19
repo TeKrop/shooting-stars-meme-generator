@@ -30,6 +30,44 @@
         <div id="tap-to-play">
             <p>▶ Click to launch</p>
         </div>
+        <dialog id="preview-dialog">
+            <div class="preview-card">
+                <div id="crop-step">
+                    <p class="tagline">✦ Step 1: Crop ✦</p>
+                    <div id="crop-area">
+                        <img id="preview-img" alt="Preview">
+                    </div>
+                    <p class="crop-hint">Adjust the selection to crop, or continue as-is</p>
+                </div>
+
+                <div id="edit-step" hidden>
+                    <p class="tagline">✦ Step 2: Transparency ✦</p>
+                    <canvas id="edit-canvas"></canvas>
+                    <div class="tool-picker">
+                        <button id="tool-erase" type="button" aria-pressed="true">🧽 Erase</button>
+                        <button id="tool-pick" type="button" aria-pressed="false">🎯 Pick color</button>
+                        <button id="edit-undo" type="button" disabled>↺ Undo</button>
+                        <button id="edit-redo" type="button" disabled>↻ Redo</button>
+                    </div>
+                    <div class="slider-control" id="erase-size-control">
+                        <label for="erase-size">Brush size</label>
+                        <input id="erase-size" type="range" min="5" max="60" value="20">
+                    </div>
+                    <div class="slider-control" id="pick-tolerance-control" hidden>
+                        <label for="pick-tolerance">Tolerance</label>
+                        <input id="pick-tolerance" type="range" min="0" max="100" value="25">
+                    </div>
+                    <p class="crop-hint">Make parts of the image transparent (optional)</p>
+                </div>
+
+                <div class="preview-actions">
+                    <button id="preview-cancel" type="button">✕ Cancel</button>
+                    <button id="edit-back" type="button" hidden>⬅ Back</button>
+                    <button id="crop-next" type="button">Next ➔</button>
+                    <button id="preview-confirm" type="button" hidden>✦ Upload ✦</button>
+                </div>
+            </div>
+        </dialog>
         <div id="pictures-container"></div>
         <footer>
             <p>Code by <b><a href="https://tekrop.fr" target="_blank">Valentin "TeKrop" PORCHET</a></b> - <a href="https://github.com/TeKrop/shooting-stars-meme-generator/blob/main/CGU.md" target="_blank">Terms and conditions of use</a> (in french)</p>

@@ -167,6 +167,247 @@ input#file-upload {
     }
 }
 
+dialog#preview-dialog {
+    border: 3px solid var(--color-ink);
+    border-radius: 10px;
+    padding: 0;
+    background: transparent;
+
+    &::backdrop {
+        background: rgba(17, 17, 22, 0.7);
+    }
+}
+
+.preview-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: rgba(17, 17, 22, 0.85);
+    box-shadow: 4px 4px 0 var(--color-ink);
+    max-width: min(95vw, 900px);
+}
+
+#crop-step,
+#edit-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+
+    &[hidden] {
+        display: none;
+    }
+}
+
+#crop-area {
+    position: relative;
+    width: min(85vw, 800px);
+    height: 70vh;
+
+    /* cropper-canvas has no default width/height beyond a 100px min-height,
+       so without this it renders far smaller than its container */
+    cropper-canvas {
+        width: 100%;
+        height: 100%;
+    }
+}
+
+#preview-img {
+    max-width: 100%;
+    max-height: 100%;
+
+    -webkit-user-drag: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+#edit-canvas {
+    display: block;
+    max-width: min(85vw, 800px);
+    max-height: 70vh;
+    touch-action: none;
+    cursor: crosshair;
+    border: 2px solid var(--color-ink);
+
+    /* checkerboard so erased/picked-transparent areas are visible while editing */
+    background-image:
+        linear-gradient(45deg, #444 25%, transparent 25%),
+        linear-gradient(-45deg, #444 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #444 75%),
+        linear-gradient(-45deg, transparent 75%, #444 75%);
+    background-size: 16px 16px;
+    background-position:
+        0 0,
+        0 8px,
+        8px -8px,
+        -8px 0;
+    background-color: #666;
+}
+
+.tool-picker {
+    display: flex;
+    gap: 8px;
+
+    button {
+        font-family: sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        padding: 6px 12px;
+        border: 2px solid var(--color-ink);
+        border-radius: 6px;
+        cursor: pointer;
+        color: var(--color-cream);
+        background: transparent;
+
+        &[aria-pressed="true"] {
+            background: var(--color-cyan);
+            color: var(--color-ink);
+        }
+
+        &:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+    }
+}
+
+.slider-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-cream);
+    font-family: sans-serif;
+    font-size: 13px;
+
+    &[hidden] {
+        display: none;
+    }
+
+    /* a plain text label, not the button-like card the bare `label`
+       selector above is styled for (that one's meant for the file-upload
+       trigger specifically) */
+    label {
+        padding: 0;
+        background: none;
+        border: none;
+        box-shadow: none;
+        cursor: default;
+        font-size: inherit;
+        font-weight: 400;
+        color: inherit;
+        text-shadow: none;
+        transition: none;
+
+        &:hover,
+        &:active {
+            background: none;
+            transform: none;
+            box-shadow: none;
+        }
+    }
+}
+
+.crop-hint {
+    margin: 0;
+    color: var(--color-cream);
+    font-family: sans-serif;
+    font-size: 13px;
+    opacity: 0.8;
+}
+
+.preview-actions {
+    display: flex;
+    gap: 10px;
+
+    button {
+        font-family: sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        padding: 10px 18px;
+        border: 3px solid var(--color-ink);
+        border-radius: 6px;
+        cursor: pointer;
+        box-shadow: 4px 4px 0 var(--color-ink);
+        color: var(--color-cream);
+        background: var(--color-orange);
+
+        &:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0 0 0 var(--color-ink);
+        }
+
+        &:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+    }
+
+    /* dismissive action: muted red */
+    #preview-cancel {
+        background: #7a2a2a;
+    }
+
+    /* secondary/step-back action: neutral grey */
+    #edit-back {
+        background: #4a4f57;
+    }
+
+    /* the final, primary action — bigger, distinct color, and a gentle
+       pulse so it's unmistakably the one to press */
+    #preview-confirm {
+        font-size: 18px;
+        padding: 12px 22px;
+        background: var(--color-cyan);
+        color: var(--color-ink);
+        animation: pulse-button 2s ease-in-out infinite;
+
+        &:disabled {
+            animation: none;
+        }
+    }
+}
+
+@keyframes pulse-button {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* swaps the label for a spinner while the upload is in flight */
+#preview-confirm.is-loading {
+    color: transparent;
+    position: relative;
+    pointer-events: none;
+
+    &::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 18px;
+        height: 18px;
+        margin: -9px 0 0 -9px;
+        border: 3px solid rgba(17, 17, 22, 0.35);
+        border-top-color: var(--color-ink);
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 footer {
     color: var(--color-cream);
     font-family: sans-serif;
@@ -212,6 +453,14 @@ footer {
         &:active {
             transform: none;
         }
+    }
+
+    .preview-actions #preview-confirm {
+        animation: none;
+    }
+
+    #preview-confirm.is-loading::after {
+        animation-duration: 1.2s;
     }
 }
 
