@@ -22,6 +22,7 @@ body {
     top: 50%;
     left: 50%;
 
+    transform: translate(-50%, -50%);
     border: 3px solid var(--color-ink);
     border-radius: 12px;
     padding: 20px 32px;
@@ -153,11 +154,6 @@ label {
         transform: translate(4px, 4px);
         box-shadow: 0 0 0 var(--color-ink);
     }
-
-    &:focus-visible {
-        outline: 3px solid var(--color-cyan);
-        outline-offset: 4px;
-    }
 }
 
 input#file-upload {
@@ -209,9 +205,13 @@ footer {
         animation: none;
     }
 
-    label,
-    footer {
-        transition-duration: 0.01ms;
+    label {
+        transition: none;
+
+        &:hover,
+        &:active {
+            transform: none;
+        }
     }
 }
 
@@ -245,10 +245,6 @@ footer {
         font-size: 11px;
         padding: 5px 12px;
         bottom: 8px;
-    }
-
-    footer {
-        font-size: 12px;
     }
 }
 

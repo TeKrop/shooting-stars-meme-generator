@@ -8,7 +8,7 @@
 
 ![Shooting Stars Meme Generator](client/public/img/preview.png)
 
-> Shooting Stars Meme Generator using CSS animations, use your own images and have fun ! 
+> Shooting Stars Meme Generator using CSS animations, use your own images and have fun!
 
 ## Table of contents
 * [✨ Demo](#-demo)
