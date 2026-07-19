@@ -83,7 +83,7 @@ it isn't wired into `just build`/`just dev` automatically.
 ## Linting/formatting
 
 Biome (`biome.json`) replaces the usual ESLint+Prettier pair — one tool,
-one config, no plugins needed for a project this size. Two deliberate rule
+one config, no plugins needed for a project this size. Three deliberate rule
 overrides on top of the recommended preset:
 - `style/noNonNullAssertion` off — `client/script.ts` leans on `!`/`as` casts
   for DOM lookups of elements that are always present (see Architecture
@@ -91,6 +91,14 @@ overrides on top of the recommended preset:
 - `a11y/useMediaCaption` off — the one `<video>` in `index.html` is a silent
   decorative background loop with no dialogue, so a captions requirement
   doesn't apply.
+- `style/noDescendingSpecificity` off — `client/style.css` mixes a handful of
+  ID selectors (`#tap-to-play`, `#preview-confirm`, etc.) with the rest of
+  the sheet's class selectors; the rule compares specificity file-wide, so
+  any later `&:hover`/`&:active`/`&[hidden]` on an unrelated class selector
+  gets flagged against an earlier ID selector's pseudo-class even though
+  they target completely different elements and never actually collide in
+  the cascade. All 12 warnings it raised were this false-positive shape, not
+  real ordering bugs.
 
 CSS formatting/linting is enabled (default), which reformats `client/style.css`'s
 `@keyframes` rules from compact one-liners into one-property-per-line —
