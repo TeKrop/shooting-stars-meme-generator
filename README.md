@@ -6,7 +6,7 @@
 [![Issues](https://shields.tekrop.fr/github/issues/TeKrop/shooting-stars-meme-generator)](https://github.com/TeKrop/shooting-stars-meme-generator/issues)
 [![License: MIT](https://shields.tekrop.fr/github/license/TeKrop/shooting-stars-meme-generator)](https://github.com/TeKrop/shooting-stars-meme-generator/blob/main/LICENSE)
 
-![Shooting Stars Meme Generator](client/public/img/preview.png)
+![Shooting Stars Meme Generator](client/public/img/preview.jpg)
 
 > Shooting Stars Meme Generator using CSS animations, use your own images and have fun!
 
