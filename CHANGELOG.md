@@ -1,3 +1,10 @@
+## [2.3.3](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.3.2...v2.3.3) (2026-07-20)
+
+
+### Bug Fixes
+
+* scale shooting-stars animation and mobile layout to viewport ([#25](https://github.com/TeKrop/shooting-stars-meme-generator/issues/25)) ([d7137a0](https://github.com/TeKrop/shooting-stars-meme-generator/commit/d7137a067eb3d2a2fc66a64d888d7b038329f86f))
+
 ## [2.3.2](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.3.1...v2.3.2) (2026-07-19)
 
 
