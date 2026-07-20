@@ -163,16 +163,26 @@ div#pictures-container {
        of (and blocks clicks/hover on) #tap-to-play in the stacking order,
        since it comes later in the DOM and neither has a z-index */
     pointer-events: none;
+    /* keyframe translate()/scale() distances below are tuned in px for
+       desktop widths; this scales the whole rendered transform down
+       proportionally on narrow viewports so travel stays on-screen and
+       doesn't read as faster than on desktop */
+    --travel-scale: clamp(0.25, calc(100vw / 1400px), 1);
 
     img {
         position: absolute;
-        max-width: 30%;
-        max-height: 30%;
+        /* box grown by the inverse of --travel-scale so the `scale`
+           below cancels it out at rest — the image stays the same
+           fraction of the viewport as on desktop, only the travel
+           distance actually shrinks */
+        max-width: calc(30% / var(--travel-scale));
+        max-height: calc(30% / var(--travel-scale));
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
         margin: auto;
+        scale: var(--travel-scale);
 
         &.hide {
             display: none;
@@ -703,15 +713,41 @@ footer {
     }
 
     #tap-to-play {
-        max-width: 90vw;
+        box-sizing: border-box;
+        width: 92vw;
         font-size: 2.2em;
         padding: 14px 20px;
     }
 
     footer {
+        box-sizing: border-box;
+        width: 92vw;
         font-size: 11px;
         padding: 5px 12px;
         bottom: 8px;
+    }
+}
+
+@media (orientation: portrait) {
+    .site-title {
+        top: max(20px, 2.5vh);
+        max-width: 44vw;
+    }
+
+    .uploader {
+        top: max(20px, 2.5vh);
+        max-width: 42vw;
+    }
+
+    #tap-to-play {
+        font-size: clamp(1.6em, 5.5vh, 2.6em);
+        padding: clamp(18px, 3vh, 26px) clamp(28px, 6vw, 44px);
+    }
+
+    footer {
+        bottom: max(16px, 3vh);
+        font-size: clamp(12px, 3vw, 14px);
+        padding: 8px 18px;
     }
 }
 
