@@ -1,4 +1,5 @@
 import { restartAnimation, startAnimation } from "./animation";
+import { initExport } from "./export";
 import { initPreviewDialog } from "./preview";
 
 // pictures
@@ -35,6 +36,7 @@ fileUpload.addEventListener("blur", () => {
 restartAnimation();
 
 initPreviewDialog(applyUploadedImage);
+initExport();
 
 /**
  * Swaps in a freshly uploaded image without a full page reload: updates the

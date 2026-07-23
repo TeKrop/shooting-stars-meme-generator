@@ -1,5 +1,9 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import randomstring from "randomstring";
 import index from "../client/index.html";
+import { renderExport } from "./export";
 
 // Fixed on purpose: the app always listens on 9595 inside the container (or
 // on the host, if run directly with `bun server/server.ts`). Only the Docker
@@ -111,8 +115,21 @@ async function sniffLegacyContentType(
 	return SVG_ROOT_TAG.test(head) ? "image/svg+xml" : undefined;
 }
 
+const dogePath = `${import.meta.dir}/../client/public/img/doge.png`;
+
+// a render is fast now (no headless browser to wait on), but still not
+// free — a single-slot lock is simpler than a real job queue for how
+// rarely concurrent exports will actually happen
+let exportInProgress = false;
+
 const server = Bun.serve({
 	port: HTTP_PORT,
+	// Bun's default is 10s — too short for '/export/*'. No response bytes
+	// are written until the whole render finishes (a single Response at the
+	// end, not streamed), so the entire render duration counts against this
+	// timeout. Renders have been observed to take ~3-5s under normal load;
+	// generous margin here for slower/busier hosts.
+	idleTimeout: 30,
 	routes: {
 		"/": index,
 
@@ -178,6 +195,58 @@ const server = Bun.serve({
 			`${import.meta.dir}/../client/public/videos`,
 			"/videos/",
 		),
+
+		"/export/*": async (req) => {
+			const url = new URL(req.url);
+			const hash = url.pathname.slice("/export/".length);
+			const imagePath = hash ? await resolveUpload(hash) : dogePath;
+			if (!imagePath) {
+				return withSecurityHeaders(new Response("Not Found", { status: 404 }));
+			}
+
+			if (exportInProgress) {
+				return withSecurityHeaders(
+					new Response("An export is already in progress, try again shortly", {
+						status: 429,
+					}),
+				);
+			}
+
+			const orientation =
+				url.searchParams.get("orientation") === "portrait"
+					? "portrait"
+					: "landscape";
+
+			exportInProgress = true;
+			const dir = await mkdtemp(join(tmpdir(), "shooting-stars-export-"));
+			try {
+				const outputPath = await renderExport(imagePath, orientation, dir);
+				const bytes = await Bun.file(outputPath).arrayBuffer();
+				log(
+					"export OK:",
+					hash || "(default)",
+					orientation,
+					`${bytes.byteLength} bytes`,
+				);
+				return withSecurityHeaders(
+					new Response(bytes, {
+						headers: {
+							"Content-Type": "video/mp4",
+							"Content-Disposition":
+								'attachment; filename="shooting-stars.mp4"',
+						},
+					}),
+				);
+			} catch (err) {
+				log("export failed:", err);
+				return withSecurityHeaders(
+					new Response("Export failed", { status: 500 }),
+				);
+			} finally {
+				exportInProgress = false;
+				await rm(dir, { recursive: true, force: true });
+			}
+		},
 
 		// any other path is a client-side-routed uploaded-image hash: serve the same SPA shell
 		"/*": index,

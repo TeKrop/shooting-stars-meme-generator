@@ -190,6 +190,27 @@ describe("GET /img/*", () => {
 	});
 });
 
+describe("GET /export/*", () => {
+	test("returns 404 for a hash that was never uploaded, without rendering anything", async () => {
+		const res = await fetch(new URL("/export/does-not-exist", server.url));
+		expect(res.status).toBe(404);
+	});
+
+	// a real end-to-end render (default doge image, no headless browser
+	// involved — see server/export.ts) rather than mocking ffmpeg/canvas out,
+	// since the whole point of this feature is that this now finishes in a
+	// few seconds instead of the ~25s the old Playwright-based approach took
+	test("renders the default doge animation as a real MP4 export", async () => {
+		const res = await fetch(
+			new URL("/export/?orientation=landscape", server.url),
+		);
+		expect(res.status).toBe(200);
+		expect(res.headers.get("Content-Type")).toBe("video/mp4");
+		const bytes = await res.arrayBuffer();
+		expect(bytes.byteLength).toBeGreaterThan(1000);
+	}, 30_000);
+});
+
 describe("GET /videos/*", () => {
 	test("serves the background video's captions file", async () => {
 		const res = await fetch(new URL("/videos/background.vtt", server.url));
