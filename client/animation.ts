@@ -47,7 +47,12 @@ function showLaunchPrompt() {
         // tapping this specific element launches the animation (being a
         // real <button> also gets Enter/Space handling for free)
         if (!launchListenersAttached) {
-            tapToPlay.addEventListener('touchend', startAnimation);
+            tapToPlay.addEventListener('touchend', (event) => {
+                // without this, the synthetic click that follows a touch
+                // tap would call startAnimation() a second time
+                event.preventDefault();
+                startAnimation();
+            });
             tapToPlay.addEventListener('click', startAnimation);
             launchListenersAttached = true;
         }
