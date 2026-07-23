@@ -33,6 +33,7 @@ services:
       - ./client:/app/client
       - ./tsconfig.json:/app/tsconfig.json
       - ./biome.json:/app/biome.json
+      - ./package.json:/app/package.json
       - ./.gitignore:/app/.gitignore
       - ./tests:/app/tests
     profiles:
