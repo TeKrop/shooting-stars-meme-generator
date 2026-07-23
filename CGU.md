@@ -28,7 +28,7 @@ Le site est accessible gratuitement en tout lieu à tout Utilisateur ayant un ac
 Le site met en œuvre tous les moyens mis à sa disposition pour assurer un accès de qualité à ses services. L'obligation étant de moyens, le site ne s'engage pas à atteindre ce résultat.
 Tout événement dû à un cas de force majeure ayant pour conséquence un dysfonctionnement du réseau ou du serveur n'engage pas la responsabilité de [Shooting Stars](https://shooting-stars.tekrop.fr).
 L'accès aux services du site peut à tout moment faire l'objet d'une interruption, d'une suspension, d'une modification sans préavis pour une maintenance ou pour tout autre cas. L'Utilisateur s'oblige à ne réclamer aucune indemnisation suite à l'interruption, à la suspension ou à la modification du présent contrat.
-L'Utilisateur a la possibilité de contacter le site par messagerie électronique à l’adresse tekrop@gmail.com
+L'Utilisateur a la possibilité de contacter le site par messagerie électronique à l’adresse tekrop@proton.me
 
 
 ## ARTICLE 5 : Propriété intellectuelle
@@ -40,7 +40,7 @@ Le contenu de l'Utilisateur peut être à tout moment et pour n'importe quelle r
 
 
 ## ARTICLE 6 : Données personnelles
-Le site assure à l'Utilisateur une collecte et un traitement d'informations personnelles dans le respect de la vie privée conformément à la loi n°78-17 du 6 janvier 1978 relative à l'informatique, aux fichiers et aux libertés. **Les images téléversées par l'Utilisateur sont conservées pour une durée totale de 30 jours avant d'être supprimées du serveur. Elles sont uniquement utilisées dans le cadre du service proposé.** En vertu des articles 39 et 40 de la loi en date du 6 janvier 1978, l'Utilisateur dispose d'un droit d'accès, de rectification, de suppression et d'opposition de ses données personnelles. L'Utilisateur exerce ce droit par mail à l'adresse tekrop@gmail.com.
+Le site assure à l'Utilisateur une collecte et un traitement d'informations personnelles dans le respect de la vie privée conformément à la loi n°78-17 du 6 janvier 1978 relative à l'informatique, aux fichiers et aux libertés. **Les images téléversées par l'Utilisateur sont conservées pour une durée totale de 30 jours avant d'être supprimées du serveur. Elles sont uniquement utilisées dans le cadre du service proposé.** En vertu des articles 39 et 40 de la loi en date du 6 janvier 1978, l'Utilisateur dispose d'un droit d'accès, de rectification, de suppression et d'opposition de ses données personnelles. L'Utilisateur exerce ce droit par mail à l'adresse tekrop@proton.me.
 
 
 ## ARTICLE 7 : Responsabilité et force majeure
