@@ -22,6 +22,8 @@ video.volume = 0.05;
 // once the video has ended, restart the animation
 video.addEventListener('ended', restartAnimation, false);
 
+const landing = document.getElementById('landing') as HTMLElement;
+const starfield = document.getElementById('starfield') as HTMLElement;
 const tapToPlay = document.getElementById('tap-to-play') as HTMLElement;
 const tapToPlayText =
     '<span class="spark">✦</span> Press to fly <span class="spark">✦</span>';
@@ -70,8 +72,9 @@ function restartAnimation() {
  * animation can never run ahead of a video that isn't ready yet
  */
 function showLaunchPrompt() {
-    tapToPlay.style.display = 'block';
-    tapToPlay.classList.remove('fade-out');
+    landing.style.display = 'flex';
+    landing.classList.remove('fade-out');
+    starfield.classList.remove('fade-out');
     if (video.readyState >= video.HAVE_CURRENT_DATA) {
         tapToPlay.innerHTML = `<p>${tapToPlayText}</p>`;
         // scoped to the prompt itself, not the whole page — only clicking/
@@ -109,9 +112,10 @@ function startAnimation() {
     });
     animationTimeouts = [];
 
-    // fades out rather than vanishing instantly, so the button visibly
+    // fades out rather than vanishing instantly, so the console visibly
     // hands off to the image that flies in during the "init" stage below
-    tapToPlay.classList.add('fade-out');
+    landing.classList.add('fade-out');
+    starfield.classList.add('fade-out');
     video.style.display = 'block';
 
     // play the background video from the start, even if a previous run
