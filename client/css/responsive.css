@@ -1,0 +1,124 @@
+@layer responsive {
+    @media (prefers-reduced-motion: reduce) {
+        .console-btn--primary {
+            animation: none;
+
+            .spark {
+                animation: none;
+            }
+        }
+
+        .console-btn,
+        .dock-btn {
+            transition: none;
+
+            &:hover,
+            &:active,
+            &:focus-visible {
+                transform: none;
+            }
+        }
+
+        footer {
+            .status-dot,
+            .cursor {
+                animation: none;
+            }
+        }
+
+        #starfield {
+            animation: none;
+        }
+
+        .preview-actions #preview-confirm {
+            animation: none;
+        }
+
+        #preview-confirm.is-loading::after {
+            animation-duration: 1.2s;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .console-card {
+            padding: 24px 20px;
+            gap: 10px;
+        }
+
+        .console-path {
+            font-size: 11px;
+        }
+
+        .tagline {
+            font-size: 13px;
+        }
+
+        .console-title {
+            gap: 12px;
+        }
+
+        .console-logo {
+            width: 40px;
+            height: 40px;
+        }
+
+        .console-card h1 {
+            text-align: center;
+        }
+
+        .console-actions {
+            flex-direction: column;
+            align-items: stretch;
+            width: 100%;
+        }
+
+        .console-btn {
+            width: 100%;
+            justify-content: center;
+            box-sizing: border-box;
+            padding: 16px 20px;
+            font-size: 1.15em;
+        }
+
+        #quick-actions {
+            top: 12px;
+            left: 12px;
+        }
+
+        .dock-btn {
+            width: 38px;
+            height: 38px;
+            font-size: 15px;
+        }
+
+        footer {
+            font-size: 10px;
+            padding: 6px 10px;
+        }
+    }
+
+    @media (orientation: portrait) {
+        .console-card {
+            padding: clamp(20px, 4vh, 32px) clamp(16px, 5vw, 32px);
+        }
+
+        .console-card h1 {
+            font-size: clamp(22px, 7vw, 36px);
+        }
+
+        .console-logo {
+            width: 48px;
+            height: 48px;
+        }
+
+        #quick-actions {
+            top: max(12px, 2vh);
+            left: max(12px, 2vw);
+        }
+
+        footer {
+            font-size: clamp(10px, 2.6vw, 12px);
+            padding: 6px 14px;
+        }
+    }
+}
