@@ -28,6 +28,19 @@ const tapToPlay = document.getElementById('tap-to-play') as HTMLElement;
 const tapToPlayText =
     '<span class="spark">✦</span> Press to fly <span class="spark">✦</span>';
 
+// the hidden file input can't rely on CSS's adjacent-sibling focus trick
+// since it has two labels in different parts of the DOM (see .file-upload-focused
+// in style.css) — toggling a class here works in every browser, unlike :has()
+const fileUpload = document.getElementById('file-upload') as HTMLInputElement;
+fileUpload.addEventListener('focus', () => {
+    if (fileUpload.matches(':focus-visible')) {
+        document.body.classList.add('file-upload-focused');
+    }
+});
+fileUpload.addEventListener('blur', () => {
+    document.body.classList.remove('file-upload-focused');
+});
+
 // pending setTimeout ids for the current run's picture choreography, so a
 // restart (e.g. uploading a new image mid-flight) can cancel them instead
 // of leaving them to fire later and stomp on the new run's classes

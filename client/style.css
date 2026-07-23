@@ -135,14 +135,6 @@ body {
         margin: 0;
     }
 
-    /* used when launching: faded out in place of an instant display:none,
-       so the button visibly hands off to the animation instead of just
-       vanishing */
-    &.fade-out {
-        opacity: 0;
-        pointer-events: none;
-    }
-
     &:hover {
         transform: translateY(-2px);
     }
@@ -360,6 +352,14 @@ div#pictures-container {
 
     &.fade-out {
         opacity: 0;
+
+        /* .console-card sets its own pointer-events: auto below, which an
+           ancestor's pointer-events alone can't override — without this
+           the invisible card still intercepts clicks/keyboard focus for
+           the whole animation run */
+        .console-card {
+            pointer-events: none;
+        }
     }
 }
 
@@ -533,13 +533,17 @@ input#file-upload {
     z-index: -1;
 }
 
-/* the hidden file input can't be an adjacent sibling of every label that
-   triggers it (there are three, in different parts of the DOM), so the
-   keyboard-focus ring is applied to all of them via :has() instead */
-body:has(#file-upload:focus-visible) .console-btn,
-body:has(#file-upload:focus-visible) .dock-btn[for="file-upload"] {
-    outline: 2px solid var(--color-cyan);
-    outline-offset: 4px;
+/* the hidden file input can't be an adjacent sibling of both labels that
+   trigger it (they live in different parts of the DOM), so script.ts
+   toggles this class on <body> on focus/blur instead of relying on
+   :has() — keeps browser support universal and scopes the ring to only
+   the two actual upload triggers, not every .console-btn */
+body.file-upload-focused {
+    .console-btn--secondary,
+    .dock-btn[for="file-upload"] {
+        outline: 2px solid var(--color-cyan);
+        outline-offset: 4px;
+    }
 }
 
 dialog#preview-dialog {
