@@ -1,0 +1,175 @@
+@layer components {
+    #upload-error {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 3;
+        max-width: min(90vw, 480px);
+
+        border: 3px solid var(--color-void);
+        border-radius: 10px;
+        padding: 12px 16px;
+        background: #7a2a2a;
+        box-shadow: 4px 4px 0 var(--color-void);
+
+        &[hidden] {
+            display: none;
+        }
+
+        p {
+            margin: 0;
+            color: var(--color-chrome);
+            font-family: sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        button {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            padding: 0;
+            color: var(--color-chrome);
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1;
+            cursor: pointer;
+        }
+    }
+
+    /* idle-state UI — title + tagline + both CTAs, faded out together as a
+       single unit once the animation launches (see #landing.fade-out and
+       script.ts's startAnimation/showLaunchPrompt) */
+    #landing {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 2;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        box-sizing: border-box;
+        /* the flex box spans the full viewport (inset: 0) but only
+           .console-card is actually visible — without this, the empty area
+           around the card (which overlaps the footer) would still swallow
+           clicks meant for whatever's underneath */
+        pointer-events: none;
+
+        transition: opacity 0.4s ease;
+
+        &.fade-out {
+            opacity: 0;
+
+            /* .console-card sets its own pointer-events: auto below, which an
+               ancestor's pointer-events alone can't override — without this
+               the invisible card still intercepts clicks/keyboard focus for
+               the whole animation run */
+            .console-card {
+                pointer-events: none;
+            }
+        }
+    }
+
+    .console-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        max-width: min(90vw, 620px);
+        padding: 40px 48px;
+        pointer-events: auto;
+        border: 1.5px solid rgba(var(--color-cyan-rgb), 0.4);
+        background: rgba(var(--color-void-rgb), 0.55);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        box-shadow:
+            0 20px 60px rgba(0, 0, 0, 0.5),
+            0 0 40px rgba(var(--color-magenta-rgb), 0.12),
+            inset 0 0 0 1px rgba(var(--color-void-rgb), 0.4);
+        clip-path: polygon(
+            24px 0,
+            100% 0,
+            100% calc(100% - 24px),
+            calc(100% - 24px) 100%,
+            0 100%,
+            0 24px
+        );
+    }
+
+    .console-path {
+        margin: 0;
+        color: var(--color-cyan);
+        font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+        font-size: 13px;
+        opacity: 0.75;
+    }
+
+    .console-title {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 18px;
+    }
+
+    .console-logo {
+        width: 64px;
+        height: 64px;
+        flex-shrink: 0;
+        border: 1.5px solid rgba(var(--color-cyan-rgb), 0.5);
+        clip-path: polygon(
+            10px 0,
+            100% 0,
+            100% calc(100% - 10px),
+            calc(100% - 10px) 100%,
+            0 100%,
+            0 10px
+        );
+        box-shadow: 0 0 20px rgba(var(--color-magenta-rgb), 0.25);
+    }
+
+    .console-card h1 {
+        margin: 0;
+        font-family: sans-serif;
+        font-size: clamp(28px, 5vw, 48px);
+        font-weight: 900;
+        line-height: 1.1;
+        text-align: left;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+
+        background: linear-gradient(
+            100deg,
+            var(--color-magenta) 0%,
+            var(--color-purple) 50%,
+            var(--color-cyan) 100%
+        );
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+        text-shadow:
+            2px 0 0 rgba(var(--color-magenta-rgb), 0.35),
+            -2px 0 0 rgba(var(--color-cyan-rgb), 0.35);
+    }
+
+    .tagline {
+        margin: 0;
+        color: var(--color-chrome);
+        font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+        font-size: 15px;
+        font-style: italic;
+        opacity: 0.85;
+    }
+
+    .console-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 10px;
+    }
+}

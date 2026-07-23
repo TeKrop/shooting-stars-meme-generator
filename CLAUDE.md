@@ -65,7 +65,7 @@ dev-mode bundling when the var is unset.
 `tsconfig.json` covers both runtimes in the project with one shared config
 (not worth splitting for a project this size): `"types": ["bun"]` for
 `server/server.ts`'s Bun globals (`Bun`, `process`, `import.meta.dir`), `"lib":
-["ESNext", "DOM", "DOM.Iterable"]` for `client/script.ts`'s browser globals
+["ESNext", "DOM", "DOM.Iterable"]` for the `client/*.ts` files' browser globals
 (`document`, `window`, etc.). Note `"types": ["bun"]` is required, not
 optional — omitting it entirely (relying on TS's default "auto-include every
 `@types/*` package") does NOT pick up `@types/bun`'s ambient globals, even
@@ -85,24 +85,27 @@ it isn't wired into `just build`/`just dev` automatically.
 Biome (`biome.json`) replaces the usual ESLint+Prettier pair — one tool,
 one config, no plugins needed for a project this size. Three deliberate rule
 overrides on top of the recommended preset:
-- `style/noNonNullAssertion` off — `client/script.ts` leans on `!`/`as` casts
-  for DOM lookups of elements that are always present (see Architecture
-  below); the rule's blanket ban doesn't fit that pattern.
+- `style/noNonNullAssertion` off — `client/script.ts`/`client/animation.ts`
+  lean on `!`/`as` casts for DOM lookups of elements that are always present
+  (see Architecture below); the rule's blanket ban doesn't fit that pattern.
 - `a11y/useMediaCaption` off — the one `<video>` in `index.html` is a silent
   decorative background loop with no dialogue, so a captions requirement
   doesn't apply.
-- `style/noDescendingSpecificity` off — `client/style.css` mixes a handful of
-  ID selectors (`#tap-to-play`, `#preview-confirm`, etc.) with the rest of
-  the sheet's class selectors; the rule compares specificity file-wide, so
-  any later `&:hover`/`&:active`/`&[hidden]` on an unrelated class selector
-  gets flagged against an earlier ID selector's pseudo-class even though
-  they target completely different elements and never actually collide in
-  the cascade. All 12 warnings it raised were this false-positive shape, not
-  real ordering bugs.
+- `style/noDescendingSpecificity` off — each file under `client/css/` mixes a
+  handful of ID selectors (`#tap-to-play`, `#preview-confirm`, etc.) with the
+  rest of that file's class selectors; the rule compares specificity
+  file-wide, so any later `&:hover`/`&:active`/`&[hidden]` on an unrelated
+  class selector gets flagged against an earlier ID selector's pseudo-class
+  even though they target completely different elements and never actually
+  collide in the cascade. Wrapping each file in its own `@layer` (see
+  Architecture below) does **not** make this override droppable — Biome's
+  specificity check is static and doesn't model `@layer` ordering at all, so
+  it still raises the exact same false positives with the override removed
+  (confirmed by testing, re-check before ever removing this override again).
 
-CSS formatting/linting is enabled (default), which reformats `client/style.css`'s
-`@keyframes` rules from compact one-liners into one-property-per-line —
-purely cosmetic, no behavior change.
+CSS formatting/linting is enabled (default), which reformats `@keyframes`
+rules from compact one-liners into one-property-per-line — purely cosmetic,
+no behavior change.
 
 `vcs.useIgnoreFile: true` needs an actual `.gitignore` present to work, so
 it's bind-mounted into `bun-dev` alongside the other source paths — without
@@ -129,13 +132,23 @@ project-level config (`Dockerfile`, `docker-compose.yml`, `justfile`,
 
 - **`client/index.html`** (Bun's HTML-import entry point) — links `./style.css` and `./script.ts` via plain relative paths (siblings in the same folder), and the background video via `./public/videos/background.mp4` (a real relative path so Bun's bundler picks it up, copies it, and rewrites the URL — referencing it as `/videos/background.mp4` instead makes the bundler try and fail to resolve it as a module). The favicon `<link>` is the one asset-looking tag Bun's bundler does NOT process at all, so it keeps a plain `/img/favicon.png` server-relative href, served by the `/img/*` route.
 
-- **`client/script.ts`** — the shooting-stars animation itself, no bundler-specific APIs beyond being loaded as an ES module (`type="module"`) and importing its sibling modules below. Reads the current URL path: if it's `/` shows `img/doge.png`, otherwise treats the path as an uploaded image hash and points all 6 `<img>` elements at `uploads/<hash>`. The `times` map in `startAnimation()` is the choreography table (typed as `Record<number, AnimationStage>`): keys are millisecond offsets, values say which CSS class each picture should have at that offset (driven by `setTimeout`, not `requestAnimationFrame`). This map's timings must line up with `videos/background.mp4`'s runtime and with the animation durations defined in the CSS. DOM lookups use non-null assertions/casts (`document.getElementById('video') as HTMLVideoElement`, etc.) rather than defensive null checks, since these are static elements always present in `index.html`. `startAnimation()` is only ever wired to `#tap-to-play` itself (a real `<button>`, not `window`) — clicking/tapping/keyboard-activating that one element is the only way to launch, no target-filtering guard needed since nothing else can reach the listener. Passes `applyUploadedImage()` as a callback into `initPreviewDialog()` (see below): on a successful upload it swaps the 6 pictures' `src`, `history.pushState()`s the new `/<hash>` URL, and calls `startAnimation()` directly — no full page reload.
+- **`client/script.ts`** — page bootstrap, no bundler-specific APIs beyond being loaded as an ES module (`type="module"`) and importing its sibling modules. Reads the current URL path: if it's `/` shows `img/doge.png`, otherwise treats the path as an uploaded image hash and points all 6 `<img>` elements at `uploads/<hash>`, then creates the 6 `<img id="pict1">`..`<img id="pict6">` elements themselves. Also owns the file-upload-focus class trick (`#file-upload` can't rely on CSS's adjacent-sibling focus trick since it has two labels in different parts of the DOM — see `body.file-upload-focused` in `client/css/buttons.css`), and wires `initPreviewDialog(applyUploadedImage)` (see `client/preview.ts` below). `applyUploadedImage()` is the callback passed into `initPreviewDialog()`: on a successful upload it swaps the 6 pictures' `src`, `history.pushState()`s the new `/<hash>` URL, and calls `startAnimation()` (imported from `client/animation.ts` below) directly — no full page reload. The actual choreography engine lives in `animation.ts`, not here — this file's only ties to it are the `restartAnimation()`/`startAnimation()` imports/calls.
+
+- **`client/animation.ts`** — the shooting-stars choreography engine, split out of `script.ts` since it's a self-contained concern (launch-prompt gating + the timed picture/video sequence) with its own DOM refs (`video`, `landing`, `starfield`, `tap-to-play`) and module state (`animationTimeouts`, `launchListenersAttached`), unrelated to `script.ts`'s one-time bootstrap work. The `times` map in `startAnimation()` is the choreography table (typed as `Record<number, AnimationStage>`): keys are millisecond offsets, values say which CSS class each picture should have at that offset (driven by `setTimeout`, not `requestAnimationFrame`). This map's timings must line up with `videos/background.mp4`'s runtime and with the animation durations defined in `client/css/stars.css`. DOM lookups use non-null assertions/casts (`document.getElementById('video') as HTMLVideoElement`, etc.) rather than defensive null checks, since these are static elements always present in `index.html`. `startAnimation()` is only ever wired to `#tap-to-play` itself (a real `<button>`, not `window`) — clicking/tapping/keyboard-activating that one element is the only way to launch, no target-filtering guard needed since nothing else can reach the listener. Exports `restartAnimation`/`startAnimation` for `script.ts` to call; wires `video`'s own `'ended'` listener (→ `restartAnimation`) itself at module load, since that's part of this module's own lifecycle rather than the bootstrap's.
 
 - **`client/preview.ts`** — the pre-upload preview dialog: file picked → crop step → optional transparency-editing step → upload. Uses [`cropperjs`](https://github.com/fengyuanchen/cropperjs) (v2, the Web Components rewrite — `new Cropper(image, { container })` renders a `<cropper-canvas>` tree of custom elements, not a single widget) for the crop step, driven through its `$`-prefixed instance API (`$ready`, `$center`, `$scale`, `getCropperSelection()`, `$change`, `$toCanvas`) rather than DOM attributes. On crop-step init, the image is sized to `IMAGE_FIT_SCALE` (80%) of the crop zone via `$center('contain').$scale(...)`, and the selection is immediately `$change()`'d to match the image's own rendered bounds exactly (read back via `getBoundingClientRect()` on the image vs. the canvas) — cropperjs's own `initial-coverage` option sizes the selection against the *canvas*, not the image, so without this a full-coverage selection would include the empty letterboxed margin as extra transparent space whenever the image and crop zone aspect ratios don't match. `getCropperSelection()!.$toCanvas()` renders the crop result into `#edit-canvas`, handing off to `initTransparencyTools()` (see below) for the second step. Final upload always goes out as `cropped.png` via `fetch('/upload', ...)` regardless of whether the user touched the transparency tools, since the server only accepts PNG (see `server.ts` above). `fetch` follows the 303 itself, so the outcome is read from the final `res.url`/`res.status` rather than the redirect header directly: a hash-shaped path means success (dialog closes, `onUploaded(hash)` callback fires — no navigation); a bare `/` with an `error` query param, a `>=500` status, or a thrown/rejected `fetch` (network failure) all close the dialog and show a reason-specific message via `#upload-error` (a dismissible, auto-timeout toast — see `UPLOAD_ERROR_MESSAGES`) instead of reloading the page or failing silently.
 
 - **`client/transparency.ts`** — the optional second dialog step: erase (drag a brush, `globalCompositeOperation: 'destination-out'`) or color-pick (click a pixel, clear every pixel within a Euclidean-RGB-distance tolerance via `ImageData`) to make parts of the cropped canvas transparent. Both tools share one undo/redo stack of `ImageData` snapshots (capped at `MAX_HISTORY`, taken once per pointerdown so a whole drag is one undo step, not one per brush dab). `initTransparencyTools()` returns a `reset()` used by `preview.ts` to clear tool/history state each time a fresh crop lands in `#edit-canvas`.
 
-- **`client/style.css`** — the actual animation, expressed as native CSS `@keyframes` per stage (`init`, `spaceone`, `dolphins`, `spacetwo`, `microone`, `microtwo`). Each stage has per-picture keyframe variants (e.g. `spacetwo_1` through `spacetwo_6`) with different transform/timing so images don't move identically. Changing an animation's duration here means updating the matching offset(s) in `script.ts`'s `times` map too — they are not derived from each other. Uses native CSS nesting (`&:hover`, `&.hide`) — Bun's bundler (Lightning CSS) supports this directly, no preprocessor needed. Was originally LESS; converted to plain CSS since Bun's bundler doesn't support LESS and the only genuinely LESS-specific features in the file were a few `@variable`-based compile-time arithmetic values in the `init` keyframes, now inlined as literals.
+- **`client/style.css`** — a thin manifest, not a stylesheet in its own right: declares the cascade layer order (`@layer base, components, dialog, stars, responsive;`) and `@import`s each domain file below from `client/css/`. `index.html` still links this one file directly (`./style.css`); Bun's bundler (Lightning CSS) resolves and inlines the `@import`s into a single bundled stylesheet at build/serve time — confirmed by testing (dev-mode bundle output), not an assumption. Layer order is what actually matters here: a later layer's rules win over an earlier layer's regardless of selector specificity or source order, which is what lets `css/responsive.css` (last) reliably override `css/buttons.css`/`css/landing.css` (`components`) without fighting ID-vs-class specificity.
+  - **`client/css/base.css`** (`layer: base`) — global page chrome that's always present regardless of screen: `:root` theme variables, `html`/`body` reset, `#starfield`, the background `video#video` element and `#pictures-container`, and the persistent `footer`.
+  - **`client/css/buttons.css`** (`layer: components`) — shared button chrome used both on the landing screen and persistently during playback: `.console-btn` (+ `--primary`/`--secondary` variants), `#quick-actions`/`.dock-btn`, and the hidden `#file-upload` input + its focus-ring trick.
+  - **`client/css/landing.css`** (`layer: components`) — the idle-state UI: `#landing`, `.console-card` and its contents, `#upload-error`.
+  - **`client/css/dialog.css`** (`layer: dialog`) — the upload preview dialog: crop/edit steps, `.tool-picker`, `.slider-control`, `.preview-actions`.
+  - **`client/css/stars.css`** (`layer: stars`) — the actual shooting-stars animation, expressed as native CSS `@keyframes` per stage (`init`, `spaceone`, `dolphins`, `spacetwo`, `microone`, `microtwo`). Each stage has per-picture keyframe variants (e.g. `spacetwo_1` through `spacetwo_6`) with different transform/timing so images don't move identically. Changing an animation's duration here means updating the matching offset(s) in `client/animation.ts`'s `times` map too — they are not derived from each other. The most self-contained domain file — no cross-refs to anything else.
+  - **`client/css/responsive.css`** (`layer: responsive`, last) — the `prefers-reduced-motion`/`max-width`/`orientation` media queries, kept as one file rather than split into each component's own file since they already cross-cut `console-btn`/`dock-btn`/`footer`/`console-card` and reordering them into per-component files would obscure the "these are the overrides" mental model.
+
+  All files use native CSS nesting (`&:hover`, `&.hide`) — Bun's bundler (Lightning CSS) supports this directly, no preprocessor needed. Was originally one LESS file; converted to plain CSS since Bun's bundler doesn't support LESS and the only genuinely LESS-specific features were a few `@variable`-based compile-time arithmetic values in the `init` keyframes, now inlined as literals.
 
 - **`client/public/img/doge.png`** — the only asset still served through a manual route rather than the HTML bundler, since it's referenced dynamically (see `script.ts` above). `client/public/` also holds `favicon.png`/`preview.jpg` (same manual-route reasoning) and `videos/background.mp4` (bundler-processed, see `index.html` above).
 
