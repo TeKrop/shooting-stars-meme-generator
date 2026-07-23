@@ -1,3 +1,10 @@
+## [2.4.1](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.4.0...v2.4.1) (2026-07-23)
+
+
+### Bug Fixes
+
+* compressed doge.png ([#28](https://github.com/TeKrop/shooting-stars-meme-generator/issues/28)) ([92bb5d9](https://github.com/TeKrop/shooting-stars-meme-generator/commit/92bb5d91f7c518746ba9a8a0652d692e859ba409))
+
 # [2.4.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.3.3...v2.4.0) (2026-07-23)
 
 
