@@ -34,6 +34,19 @@
         );
     }
 
+    .slider-control {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--color-chrome);
+        font-family: sans-serif;
+        font-size: 13px;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
     #crop-step,
     #edit-step {
         display: flex;
@@ -139,19 +152,6 @@
                 opacity: 0.4;
                 cursor: not-allowed;
             }
-        }
-    }
-
-    .slider-control {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--color-chrome);
-        font-family: sans-serif;
-        font-size: 13px;
-
-        &[hidden] {
-            display: none;
         }
     }
 

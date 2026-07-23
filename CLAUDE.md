@@ -83,7 +83,7 @@ it isn't wired into `just build`/`just dev` automatically.
 ## Linting/formatting
 
 Biome (`biome.json`) replaces the usual ESLint+Prettier pair — one tool,
-one config, no plugins needed for a project this size. Three deliberate rule
+one config, no plugins needed for a project this size. Two deliberate rule
 overrides on top of the recommended preset:
 - `style/noNonNullAssertion` off — `client/script.ts`/`client/animation.ts`
   lean on `!`/`as` casts for DOM lookups of elements that are always present
@@ -91,17 +91,20 @@ overrides on top of the recommended preset:
 - `a11y/useMediaCaption` off — the one `<video>` in `index.html` is a silent
   decorative background loop with no dialogue, so a captions requirement
   doesn't apply.
-- `style/noDescendingSpecificity` off — each file under `client/css/` mixes a
-  handful of ID selectors (`#tap-to-play`, `#preview-confirm`, etc.) with the
-  rest of that file's class selectors; the rule compares specificity
-  file-wide, so any later `&:hover`/`&:active`/`&[hidden]` on an unrelated
-  class selector gets flagged against an earlier ID selector's pseudo-class
-  even though they target completely different elements and never actually
-  collide in the cascade. Wrapping each file in its own `@layer` (see
-  Architecture below) does **not** make this override droppable — Biome's
-  specificity check is static and doesn't model `@layer` ordering at all, so
-  it still raises the exact same false positives with the override removed
-  (confirmed by testing, re-check before ever removing this override again).
+
+`style/noDescendingSpecificity` is **not** overridden (it used to be, before
+`client/style.css` was split into `client/css/*.css` — see Architecture
+below). The rule flags a lower-specificity selector defined after a
+higher-specificity one for a related selector; each flagged case so far has
+been two selectors that never actually collide in the cascade (an ID-scoped
+override rule vs. an unrelated plain class), so the fix is a pure reorder —
+move the lower-specificity rule earlier in the file — never a behavior
+change, since the higher-specificity selector already wins regardless of
+source order. `@layer` ordering (see Architecture below) does **not** make
+this rule droppable on its own — Biome's specificity check is static and
+doesn't model `@layer` semantics at all (confirmed by testing: removing the
+override with `@layer`s in place still raised the same warnings, until the
+underlying selectors were reordered).
 
 CSS formatting/linting is enabled (default), which reformats `@keyframes`
 rules from compact one-liners into one-property-per-line — purely cosmetic,
