@@ -1,3 +1,10 @@
+# [2.4.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.3.3...v2.4.0) (2026-07-23)
+
+
+### Features
+
+* made new homepage ([#27](https://github.com/TeKrop/shooting-stars-meme-generator/issues/27)) ([c59c224](https://github.com/TeKrop/shooting-stars-meme-generator/commit/c59c22421a7185ae3610c7e6ae20c5943b8689f5))
+
 ## [2.3.3](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.3.2...v2.3.3) (2026-07-20)
 
 
