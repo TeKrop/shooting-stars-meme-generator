@@ -14,26 +14,35 @@
         <meta property="og:url" content="https://shooting-stars.tekrop.fr">
     </head>
     <body>
+        <div id="starfield"></div>
         <video id="video" preload="auto">
             <source src="./public/videos/background.mp4" type="video/mp4">
             Your browser does not support the video tag.
         </video>
-        <header class="site-title">
-            <img src="./public/img/favicon.png" alt="" class="site-logo">
-            <h1>Shooting Stars<br>Meme Generator</h1>
-        </header>
-        <div class="uploader">
-            <div class="uploader-card">
-                <p class="tagline">✦ Make it fly ✦</p>
-                <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post">
-                    <input type="file" id="file-upload" name="file-upload" accept="image/*" />
-                    <label for="file-upload">📷 Upload pic</label>
-                </form>
+        <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post">
+            <input type="file" id="file-upload" name="file-upload" accept="image/*" />
+        </form>
+        <div id="quick-actions">
+            <label for="file-upload" class="dock-btn" title="Upload your pic" aria-label="Upload your pic">📤</label>
+            <button type="button" class="dock-btn" disabled title="Export (soon)" aria-label="Export (soon)">💾</button>
+            <button type="button" class="dock-btn" disabled title="Copy link (soon)" aria-label="Copy link (soon)">🔗</button>
+        </div>
+        <div id="landing">
+            <div class="console-card">
+                <p class="console-path">~/shooting-stars-meme-generator</p>
+                <div class="console-title">
+                    <img src="./public/img/favicon.png" alt="" class="console-logo">
+                    <h1>Shooting Stars<br>Meme Generator</h1>
+                </div>
+                <p class="tagline">// make anything fly</p>
+                <div class="console-actions">
+                    <button type="button" id="tap-to-play" class="console-btn console-btn--primary">
+                        <p></p>
+                    </button>
+                    <label for="file-upload" class="console-btn console-btn--secondary">📤 Upload your pic</label>
+                </div>
             </div>
         </div>
-        <button type="button" id="tap-to-play">
-            <p></p>
-        </button>
         <div id="upload-error" role="alert" hidden>
             <p></p>
             <button type="button" id="upload-error-close" aria-label="Dismiss">✕</button>
@@ -78,7 +87,7 @@
         </dialog>
         <div id="pictures-container"></div>
         <footer>
-            <p>Code by <b><a href="https://tekrop.fr" target="_blank">Valentin "TeKrop" PORCHET</a></b> - <a href="https://github.com/TeKrop/shooting-stars-meme-generator/blob/main/CGU.md" target="_blank">Terms and conditions of use</a> (in french)</p>
+            <p><span class="status-dot"></span> root@shooting-stars:~$ credits --author "<a href="https://tekrop.fr" target="_blank">Valentin &quot;TeKrop&quot; PORCHET</a>" --terms "<a href="https://github.com/TeKrop/shooting-stars-meme-generator/blob/main/CGU.md" target="_blank">terms and conditions</a>" <span class="cursor">_</span></p>
         </footer>
         <script type="module" src="./script.ts"></script>
     </body>
