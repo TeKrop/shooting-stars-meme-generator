@@ -1,3 +1,10 @@
+## [2.9.1](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.9.0...v2.9.1) (2026-07-24)
+
+
+### Bug Fixes
+
+* consistent mobile layout for export options dialog ([#40](https://github.com/TeKrop/shooting-stars-meme-generator/issues/40)) ([15e0ff8](https://github.com/TeKrop/shooting-stars-meme-generator/commit/15e0ff84149036a4481ef4cef15914d24c2cce89))
+
 # [2.9.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.8.2...v2.9.0) (2026-07-24)
 
 
