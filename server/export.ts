@@ -37,10 +37,11 @@ export const DEFAULT_FORMAT: ExportFormat = "mp4";
 // video-like content make high resolution/framerate impractically slow and
 // huge: measured at ~146s/~324MB for 1080p/60fps, vs ~20s/~6MB for the same
 // settings as WebM. Clamping GIF down keeps one format from blowing the
-// render-time budget every other export relies on. 360p/24fps was measured
-// at ~16.5s/~39MB — still the biggest file of any capped combination, but
-// comfortably within the render-time budget.
-export const GIF_MAX_RESOLUTION: Resolution = "360p";
+// render-time budget every other export relies on — 720p is excluded, but
+// 360p/480p are both allowed at full (unscaled) resolution: the client
+// warns with a real size estimate before the user commits to one of these,
+// rather than silently capping resolution further the way fps still is.
+export const GIF_MAX_RESOLUTION: Resolution = "480p";
 export const GIF_MAX_FPS: FrameRate = 24;
 
 const RESOLUTION_ORDER: Resolution[] = ["360p", "480p", "720p"];
@@ -309,26 +310,16 @@ export async function renderExport(
 	// difference at bayer_scale=5 (the coarsest/most size-efficient setting)
 	// vs the default. The full 256-color palette (palettegen's default) is
 	// kept as-is — capping max_colors was tried and measured smaller but
-	// caused visible banding, so it was rejected in favor of the size cut
-	// below, which doesn't touch color depth at all.
+	// caused visible banding, so it was rejected.
 	//
-	// GIF_SCALE_FACTOR downscales the *composited* frame (not the canvas
-	// render itself, which stays at the full chosen resolution) right before
-	// the palette/gif encode stage — this trims pixel count (the dominant
-	// cost driver for GIF size, more so than frame count: mpdecimate-style
-	// duplicate-frame dropping was measured to barely move file size at all)
-	// without reducing color count or introducing dithering artifacts.
-	// Rendering at full resolution and downscaling afterwards also looks
-	// better than natively rendering smaller would (closer to supersampling)
-	// — confirmed by pixel-comparing extracted frames: no visible banding at
-	// any factor tested down to 0.45. 0.5 (an even half-resolution downscale,
-	// e.g. 640x360 -> 320x180) was measured at ~8.2MB at 360p/24fps (GIF's
-	// max framerate, the worst case for size) and ~5MB at 360p/15fps —
-	// comfortably inside a 5-8MB target across GIF's whole fps range.
-	const GIF_SCALE_FACTOR = 0.5;
+	// No automatic downscale is applied either (an earlier version silently
+	// halved the composited frame before encoding to keep files small) — the
+	// user asked for real 360p/480p GIF output instead, so full resolution
+	// is used at whatever tier is selected and the client warns with a real
+	// size estimate up front instead of the server quietly shrinking it.
 	const filterComplex =
 		format === "gif"
-			? `[0:v]${bgFilter}[bg];[bg][1:v]overlay=shortest=1[comp];[comp]scale=iw*${GIF_SCALE_FACTOR}:ih*${GIF_SCALE_FACTOR}[small];[small]split[a][b];[a]palettegen[pal];[b][pal]paletteuse=dither=bayer:bayer_scale=5[out]`
+			? `[0:v]${bgFilter}[bg];[bg][1:v]overlay=shortest=1[comp];[comp]split[a][b];[a]palettegen[pal];[b][pal]paletteuse=dither=bayer:bayer_scale=5[out]`
 			: `[0:v]${bgFilter}[bg];[bg][1:v]overlay=shortest=1[comp]`;
 
 	const mapArgs =

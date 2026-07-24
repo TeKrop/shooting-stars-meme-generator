@@ -157,6 +157,18 @@
 		}
 	}
 
+	#gif-size-warning {
+		margin: 0;
+		text-align: center;
+		color: #ffcf7d;
+		font-family: sans-serif;
+		font-size: 13px;
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
 	#source-step,
 	#crop-step,
 	#edit-step {

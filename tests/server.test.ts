@@ -300,9 +300,10 @@ describe("GET /export/*", () => {
 	// GIF at high resolution/framerate was measured at ~146s/~324MB at the
 	// old (now-removed) 1080p/60fps tier vs ~20s/~6MB as WebM at the same
 	// settings — clampForGif() in server/export.ts silently downgrades a GIF
-	// request above 360p/24fps rather than rendering it as requested, so a
-	// request that asks for 720p/60fps GIF (the current max tier) should
-	// still come back quickly, not hang for over a minute
+	// request above 480p/24fps rather than rendering it as requested (GIF
+	// itself excludes the 720p tier entirely), so a request that asks for
+	// 720p/60fps GIF should still come back quickly, not hang for over a
+	// minute
 	test("clamps GIF resolution/fps down from an oversized request", async () => {
 		const start = Date.now();
 		const res = await fetch(

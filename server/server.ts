@@ -153,11 +153,13 @@ const server = Bun.serve({
 	// 720p (background.mp4's own native resolution — no point exporting
 	// larger); measured worst case at 1920x1080@60fps (before that tier was
 	// removed) was ~13s as MP4, ~20s as WebM, so 720p is safely under that.
-	// GIF is separately capped to 360p/24fps (see clampForGif in
+	// GIF is separately capped to 480p/24fps (see clampForGif in
 	// server/export.ts — uncapped GIF at 1080p/60fps was measured at ~146s,
 	// dangerously close to a timeout and disproportionate to every other
-	// combination) and was measured at ~16.5s at that cap. 60 leaves several
-	// times margin over every real worst case observed.
+	// combination) and was measured at ~13s at that cap (480p/24fps, GIF's
+	// own worst case, produces a ~42MB file — slow/big but still nowhere
+	// near this timeout). 60 leaves several times margin over every real
+	// worst case observed.
 	idleTimeout: 60,
 	routes: {
 		"/": index,

@@ -31,23 +31,31 @@ const PROGRESS_POLL_MS = 200;
 // make high resolution/framerate impractically slow and huge (measured:
 // ~146s/~324MB for 1080p/60fps GIF vs ~20s/~6MB for the same settings as
 // WebM) — mirrors the server-side cap in server/export.ts's clampForGif(),
-// which is what actually enforces this; this is just the matching UI
-const GIF_MAX_RESOLUTION: Resolution = "360p";
+// which is what actually enforces this; this is just the matching UI. GIF
+// renders at full (unscaled) resolution like every other format — no
+// automatic downscale — so 360p/480p are both genuinely large files; see
+// GIF_SIZE_ESTIMATE_MB below for the warning shown instead of shrinking them.
+const GIF_MAX_RESOLUTION: Resolution = "480p";
 const GIF_MAX_FPS: FrameRate = 24;
 const RESOLUTION_ORDER: Resolution[] = ["360p", "480p", "720p"];
 
-// mirrors server/export.ts's GIF_SCALE_FACTOR — GIF downscales the
-// composited frame by this much right before the palette/encode stage (to
-// keep file size down without cutting the color palette), so the actual
-// GIF pixel dimensions are smaller than the chosen resolution tier's own
-// label suggests (e.g. "360p" -> an actual 320x180/180p output). The
-// resolution buttons' labels are swapped to reflect the true output size
-// whenever GIF is selected, rather than silently showing a number that
-// doesn't match what comes out.
-const GIF_SCALE_FACTOR = 0.5;
+// real measured GIF sizes (full 256-color palette, bayer_scale=5 dither, no
+// resolution scale-down) — only the combinations GIF actually allows
+// (resolution capped to 480p, fps capped to 24) have entries. Orientation
+// doesn't change total pixel count (e.g. 640x360 vs 360x640), so one
+// estimate per resolution/fps pair covers both.
+const GIF_SIZE_ESTIMATE_MB: Record<string, number> = {
+	"360p:15": 17,
+	"360p:24": 26,
+	"480p:15": 27,
+	"480p:24": 42,
+};
 
-function gifEffectiveLabel(resolution: string): string {
-	return `${Math.round(Number.parseInt(resolution, 10) * GIF_SCALE_FACTOR)}p`;
+function estimateGifSizeMB(
+	resolution: string,
+	fps: string,
+): number | undefined {
+	return GIF_SIZE_ESTIMATE_MB[`${resolution}:${fps}`];
 }
 
 // mirrors server/export.ts's FRAME_PROGRESS_CAP — ffmpeg's own post-last-
@@ -129,22 +137,41 @@ export function initExport() {
 		'.option-row[data-option="format"]',
 	) as HTMLElement;
 
+	const gifWarning = document.getElementById("gif-size-warning") as HTMLElement;
+
+	// shows a real size estimate whenever GIF is selected — full-resolution
+	// GIF has no automatic size mitigation (see GIF_SIZE_ESTIMATE_MB above),
+	// so the warning is what tells the user up front instead of a silent cap
+	function updateGifWarning() {
+		const isGif = getSelected(formatGroup) === "gif";
+		if (!isGif) {
+			gifWarning.hidden = true;
+			return;
+		}
+		const estimate = estimateGifSizeMB(
+			getSelected(resolutionGroup),
+			getSelected(fpsGroup),
+		);
+		gifWarning.textContent =
+			estimate !== undefined
+				? `⚠️ GIF at this resolution/framerate will be a large file — roughly ${estimate}MB.`
+				: "⚠️ GIF exports produce large files.";
+		gifWarning.hidden = false;
+	}
+
 	// disables the resolution/framerate options above the GIF cap when GIF
 	// is selected (falling back the current selection if it's now disabled),
-	// re-enables them otherwise. Also relabels resolution buttons to their
-	// true GIF output size (see GIF_SCALE_FACTOR above) while GIF is active.
+	// re-enables them otherwise
 	function applyGifCap() {
 		const isGif = getSelected(formatGroup) === "gif";
 
 		for (const btn of resolutionGroup.querySelectorAll<HTMLButtonElement>(
 			"button",
 		)) {
-			const value = btn.dataset.value ?? "";
 			btn.disabled =
 				isGif &&
-				RESOLUTION_ORDER.indexOf(value as Resolution) >
+				RESOLUTION_ORDER.indexOf(btn.dataset.value as Resolution) >
 					RESOLUTION_ORDER.indexOf(GIF_MAX_RESOLUTION);
-			btn.textContent = isGif ? gifEffectiveLabel(value) : value;
 		}
 		for (const btn of fpsGroup.querySelectorAll<HTMLButtonElement>("button")) {
 			btn.disabled = isGif && Number(btn.dataset.value) > GIF_MAX_FPS;
@@ -161,6 +188,8 @@ export function initExport() {
 				selectOption(fpsGroup, String(GIF_MAX_FPS));
 			}
 		}
+
+		updateGifWarning();
 	}
 
 	for (const group of optionGroups) {
@@ -168,7 +197,7 @@ export function initExport() {
 			const btn = (e.target as HTMLElement).closest("button");
 			if (!btn || btn.disabled) return;
 			selectOption(group, btn.dataset.value ?? "");
-			if (group === formatGroup) applyGifCap();
+			applyGifCap();
 		});
 	}
 
