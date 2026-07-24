@@ -31,6 +31,16 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 	) as HTMLDialogElement;
 	const previewImg = document.getElementById("preview-img") as HTMLImageElement;
 	const cropArea = document.getElementById("crop-area") as HTMLElement;
+	const sourceStep = document.getElementById("source-step") as HTMLElement;
+	const sourceDropZone = document.getElementById(
+		"source-drop-zone",
+	) as HTMLElement;
+	const sourceBrowseBtn = document.getElementById(
+		"source-browse-btn",
+	) as HTMLButtonElement;
+	const sourceError = document.getElementById("source-error") as HTMLElement;
+	const uploadTriggers =
+		document.querySelectorAll<HTMLButtonElement>(".upload-trigger");
 	const cropStep = document.getElementById("crop-step") as HTMLElement;
 	const editStep = document.getElementById("edit-step") as HTMLElement;
 	const editCanvas = document.getElementById(
@@ -76,15 +86,89 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 		if (uploadErrorTimeout) clearTimeout(uploadErrorTimeout);
 	};
 
-	fileInput.onchange = () => {
-		const file = fileInput.files?.[0];
-		if (!file) return;
+	function showSourceError(message: string) {
+		sourceError.textContent = message;
+		sourceError.hidden = false;
+	}
+
+	function openPreviewWithFile(file: File) {
+		if (!file.type.startsWith("image/")) {
+			showSourceError("Please choose an image file.");
+			return;
+		}
 
 		if (objectUrl) URL.revokeObjectURL(objectUrl);
 		objectUrl = URL.createObjectURL(file);
 		previewImg.src = objectUrl;
 		showCropStep();
+		if (!previewDialog.open) previewDialog.showModal();
+	}
+
+	function handlePaste(e: ClipboardEvent) {
+		const items = e.clipboardData?.items;
+		if (!items) return;
+		for (const item of items) {
+			if (item.type.startsWith("image/")) {
+				const file = item.getAsFile();
+				if (file) {
+					e.preventDefault();
+					openPreviewWithFile(file);
+				}
+				return;
+			}
+		}
+		// clipboard had content but none of it was an image (e.g. copied text)
+		showSourceError("Clipboard doesn't contain an image.");
+	}
+
+	type Step = "source" | "crop" | "edit";
+
+	// centralizes the per-step hidden/visible state for the dialog's three
+	// steps and their nav buttons, instead of each step-entry point setting
+	// all six flags by hand
+	function setStep(step: Step) {
+		sourceStep.hidden = step !== "source";
+		cropStep.hidden = step !== "crop";
+		editStep.hidden = step !== "edit";
+		nextBtn.hidden = step !== "crop";
+		backBtn.hidden = step !== "edit";
+		uploadBtn.hidden = step !== "edit";
+
+		if (step === "source") {
+			previewDialog.addEventListener("paste", handlePaste);
+		} else {
+			previewDialog.removeEventListener("paste", handlePaste);
+			sourceError.hidden = true;
+		}
+	}
+
+	function openSourceStep() {
+		setStep("source");
 		previewDialog.showModal();
+	}
+
+	for (const btn of uploadTriggers) btn.onclick = openSourceStep;
+
+	sourceBrowseBtn.onclick = () => fileInput.click();
+
+	sourceDropZone.ondragover = (e) => {
+		e.preventDefault();
+		if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+		sourceDropZone.classList.add("is-drag-over");
+	};
+	sourceDropZone.ondragleave = () => {
+		sourceDropZone.classList.remove("is-drag-over");
+	};
+	sourceDropZone.ondrop = (e) => {
+		e.preventDefault();
+		sourceDropZone.classList.remove("is-drag-over");
+		const file = e.dataTransfer?.files[0];
+		if (file) openPreviewWithFile(file);
+	};
+
+	fileInput.onchange = () => {
+		const file = fileInput.files?.[0];
+		if (file) openPreviewWithFile(file);
 	};
 
 	// covers both the Cancel button and native Escape-to-close on <dialog>
@@ -94,16 +178,14 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 		if (objectUrl) URL.revokeObjectURL(objectUrl);
 		objectUrl = null;
 		fileInput.value = "";
+		previewDialog.removeEventListener("paste", handlePaste);
+		sourceError.hidden = true;
 	};
 
 	cancelBtn.onclick = () => previewDialog.close();
 
 	function showCropStep() {
-		cropStep.hidden = false;
-		editStep.hidden = true;
-		nextBtn.hidden = false;
-		backBtn.hidden = true;
-		uploadBtn.hidden = true;
+		setStep("crop");
 		// a previous upload in this same dialog session may have left these
 		// set — reset them so a fresh upload isn't stuck disabled/loading
 		uploadBtn.disabled = false;
@@ -159,11 +241,7 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 		editCanvas.height = canvas.height;
 		editCtx.drawImage(canvas, 0, 0);
 
-		cropStep.hidden = true;
-		editStep.hidden = false;
-		nextBtn.hidden = true;
-		backBtn.hidden = false;
-		uploadBtn.hidden = false;
+		setStep("edit");
 
 		// must run after editStep is unhidden: the erase cursor is sized from
 		// the canvas's displayed rect, which is 0x0 while hidden
