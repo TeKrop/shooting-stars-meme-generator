@@ -12,7 +12,6 @@ function requireElement<T extends Element>(id: string): T {
 	return el as unknown as T;
 }
 
-// pictures
 const picturesContainer = document.getElementById(
 	"pictures-container",
 ) as HTMLElement;
@@ -68,7 +67,6 @@ copyLinkBtn.addEventListener("click", async () => {
 	showCopyToast();
 });
 
-// init animation
 restartAnimation();
 
 initPreviewDialog(applyUploadedImage);

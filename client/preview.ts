@@ -24,6 +24,25 @@ const NETWORK_ERROR_MESSAGE = "Couldn't reach the server. Please try again.";
 
 const UPLOAD_ERROR_DISMISS_MS = 6000;
 
+// classifies a completed '/upload' fetch response into either a successful
+// hash or a message to show — kept separate from the dialog-closing/
+// onUploaded side effects that act on it
+function classifyUploadResult(
+	res: Response,
+): { hash: string } | { message: string } {
+	if (res.status >= 500) return { message: SERVER_ERROR_MESSAGE };
+
+	// fetch already followed the 303, so this is the final URL — a bare '/'
+	// means the upload was rejected server-side (see the `error` query
+	// param for why)
+	const url = new URL(res.url);
+	const hash = url.pathname.slice(1);
+	if (hash) return { hash };
+
+	const reason = url.searchParams.get("error") ?? "";
+	return { message: UPLOAD_ERROR_MESSAGES[reason] ?? DEFAULT_UPLOAD_ERROR };
+}
+
 export function initPreviewDialog(onUploaded: (hash: string) => void) {
 	const fileInput = document.getElementById("file-upload") as HTMLInputElement;
 	const previewDialog = document.getElementById(
@@ -285,27 +304,10 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 				method: "POST",
 				body: formData,
 			});
-
-			if (res.status >= 500) {
-				previewDialog.close();
-				showUploadError(SERVER_ERROR_MESSAGE);
-				return;
-			}
-
-			// fetch already followed the 303, so this is the final URL —
-			// a bare '/' means the upload was rejected server-side (see
-			// the `error` query param for why)
-			const url = new URL(res.url);
-			const hash = url.pathname.slice(1);
-			if (hash) {
-				previewDialog.close();
-				onUploaded(hash);
-				return;
-			}
-
+			const result = classifyUploadResult(res);
 			previewDialog.close();
-			const reason = url.searchParams.get("error") ?? "";
-			showUploadError(UPLOAD_ERROR_MESSAGES[reason] ?? DEFAULT_UPLOAD_ERROR);
+			if ("hash" in result) onUploaded(result.hash);
+			else showUploadError(result.message);
 		} catch {
 			previewDialog.close();
 			showUploadError(NETWORK_ERROR_MESSAGE);
