@@ -10,6 +10,7 @@ import { type ExportFormat, renderExportInWorker } from "./export";
 // host-side port mapping is configurable, via APP_PORT in docker-compose.yml.
 const HTTP_PORT = 9595;
 const HASH_LENGTH = parseInt(process.env.HASH_LENGTH || "5", 10); // hash length for uploaded images URL
+const MAX_HASH_ATTEMPTS = 5; // ponytail: collision odds are ~1e-8 at default HASH_LENGTH; if all attempts collide, proceed and overwrite rather than erroring out
 
 const uploadsDir = `${import.meta.dir}/../uploads`;
 
@@ -169,8 +170,16 @@ const server = Bun.serve({
 					);
 				}
 
-				const hash = randomstring.generate(HASH_LENGTH);
-				const storedName = `${hash}.png`;
+				let hash = randomstring.generate(HASH_LENGTH);
+				let storedName = `${hash}.png`;
+				for (let attempts = 0; attempts < MAX_HASH_ATTEMPTS; attempts++) {
+					const collides = await Bun.file(
+						`${uploadsDir}/${storedName}`,
+					).exists();
+					if (!collides) break;
+					hash = randomstring.generate(HASH_LENGTH);
+					storedName = `${hash}.png`;
+				}
 				await Bun.write(`${uploadsDir}/${storedName}`, file);
 				log("upload OK:", storedName, file.type, `${file.size} bytes`);
 				return withSecurityHeaders(Response.redirect(`/${hash}`, 303));

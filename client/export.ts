@@ -43,6 +43,7 @@ export function initExport() {
 
 	function showError(message: string) {
 		errorToastText.textContent = message;
+		errorToast.classList.remove("toast-success");
 		errorToast.hidden = false;
 		if (errorToastTimeout) clearTimeout(errorToastTimeout);
 		errorToastTimeout = setTimeout(() => {

@@ -20,6 +20,10 @@
 			display: none;
 		}
 
+		&.toast-success {
+			background: #2a7a3a;
+		}
+
 		p {
 			margin: 0;
 			color: var(--color-chrome);

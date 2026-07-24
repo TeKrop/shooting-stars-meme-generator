@@ -1,6 +1,15 @@
+import { version } from "../package.json";
 import { restartAnimation, startAnimation } from "./animation";
 import { initExport } from "./export";
 import { initPreviewDialog } from "./preview";
+
+const COPY_TOAST_DISMISS_MS = 4000;
+
+function requireElement<T extends Element>(id: string): T {
+	const el = document.getElementById(id);
+	if (!el) throw new Error(`Missing #${id} element in index.html`);
+	return el as unknown as T;
+}
 
 // pictures
 const picturesContainer = document.getElementById(
@@ -30,6 +39,45 @@ fileUpload.addEventListener("focus", () => {
 });
 fileUpload.addEventListener("blur", () => {
 	document.body.classList.remove("file-upload-focused");
+});
+
+requireElement<HTMLElement>("app-version").textContent = `v${version}`;
+
+// copy-link: reuses the same toast element preview.ts/export.ts use for
+// error messages — a generic dismissible message, not error-specific
+const copyLinkBtn = requireElement<HTMLButtonElement>("copy-link-btn");
+const copyToast = requireElement<HTMLElement>("upload-error");
+const copyToastText = copyToast.querySelector("p") as HTMLParagraphElement;
+let copyToastTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function showCopyToast() {
+	copyToast.hidden = false;
+	if (copyToastTimeout) clearTimeout(copyToastTimeout);
+	copyToastTimeout = setTimeout(() => {
+		copyToast.hidden = true;
+	}, COPY_TOAST_DISMISS_MS);
+}
+
+copyLinkBtn.addEventListener("click", async () => {
+	// clipboard access needs a secure context (HTTPS/localhost) and can be
+	// denied by the user, so both are worth telling apart rather than one
+	// generic failure message
+	if (!navigator.clipboard) {
+		copyToastText.textContent = "Clipboard isn't available in this browser.";
+		copyToast.classList.remove("toast-success");
+		showCopyToast();
+		return;
+	}
+	try {
+		await navigator.clipboard.writeText(window.location.href);
+		copyToastText.textContent = "Link copied!";
+		copyToast.classList.add("toast-success");
+	} catch {
+		copyToastText.textContent =
+			"Couldn't copy the link — check clipboard permissions.";
+		copyToast.classList.remove("toast-success");
+	}
+	showCopyToast();
 });
 
 // init animation
