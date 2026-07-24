@@ -5,7 +5,13 @@
 
 type ExportFormat = "mp4" | "webm";
 
-const EXPORT_ERROR_MESSAGE = "Couldn't export the animation. Please try again.";
+// keyed by the specific HTTP status server/server.ts's '/export/*' route can
+// return, so the user sees why it failed rather than one generic message
+const EXPORT_ERROR_MESSAGES: Record<number, string> = {
+	404: "Couldn't find that image anymore — try uploading it again.",
+	429: "An export is already in progress. Please try again shortly.",
+};
+const DEFAULT_EXPORT_ERROR = "Couldn't export the animation. Please try again.";
 const EXPORT_ERROR_DISMISS_MS = 6000;
 const PROGRESS_POLL_MS = 200;
 
@@ -103,7 +109,7 @@ export function initExport() {
 				`/export/${hash}?orientation=${orientation}&format=${format}`,
 			);
 			if (!res.ok) {
-				showError(EXPORT_ERROR_MESSAGE);
+				showError(EXPORT_ERROR_MESSAGES[res.status] ?? DEFAULT_EXPORT_ERROR);
 				return;
 			}
 
@@ -115,7 +121,7 @@ export function initExport() {
 			a.click();
 			URL.revokeObjectURL(url);
 		} catch {
-			showError(EXPORT_ERROR_MESSAGE);
+			showError(DEFAULT_EXPORT_ERROR);
 		} finally {
 			clearInterval(progressTimer);
 			progressDialog.close();

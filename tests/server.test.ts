@@ -4,6 +4,31 @@ import server from "../server/server.ts";
 
 const uploadedHashes: string[] = [];
 
+// used by tests that need a real hash to export by, rather than the default
+// doge image — uploads the real doge.png bytes (not a "fake-png-bytes"
+// placeholder like the plain upload tests use) since exporting actually
+// decodes the file through @napi-rs/canvas's loadImage(), which a fake PNG
+// fails. Tracks the upload for cleanup like every other uploadedHashes entry.
+async function uploadTestImage(): Promise<string> {
+	const dogeBytes = await Bun.file(
+		`${import.meta.dir}/../client/public/img/doge.png`,
+	).arrayBuffer();
+	const form = new FormData();
+	form.set(
+		"file-upload",
+		new Blob([dogeBytes], { type: "image/png" }),
+		"test.png",
+	);
+	const res = await fetch(new URL("/upload", server.url), {
+		method: "POST",
+		body: form,
+		redirect: "manual",
+	});
+	const hash = (res.headers.get("location") as string).slice(1);
+	uploadedHashes.push(`${hash}.png`);
+	return hash;
+}
+
 afterAll(async () => {
 	server.stop();
 	await Promise.all(
@@ -234,6 +259,22 @@ describe("GET /export/*", () => {
 		);
 		expect(res.status).toBe(200);
 		expect(res.headers.get("Content-Type")).toBe("video/mp4");
+	}, 30_000);
+
+	// covers the hash-based naming path (the "doge" case above only covers
+	// the no-hash fallback) — same filename-building code regardless of
+	// format, so one format is enough to guard against a regression back to
+	// a fixed "shooting-stars.<ext>" name
+	test("uses the upload's hash as the exported filename", async () => {
+		const hash = await uploadTestImage();
+
+		const res = await fetch(
+			new URL(`/export/${hash}?orientation=landscape`, server.url),
+		);
+		expect(res.status).toBe(200);
+		expect(res.headers.get("Content-Disposition")).toBe(
+			`attachment; filename="${hash}.mp4"`,
+		);
 	}, 30_000);
 });
 
