@@ -10,7 +10,10 @@
 import { join } from "node:path";
 import { Worker } from "node:worker_threads";
 import { createCanvas, loadImage } from "@napi-rs/canvas";
-import { ANIMATION_TIMELINE } from "../client/animation-timeline";
+import {
+	ANIMATION_TIMELINE,
+	pictureAnimationKey,
+} from "../client/animation-timeline";
 import { ANIMATIONS, resolvePictureFrame } from "./keyframes";
 
 export type Orientation = "landscape" | "portrait";
@@ -110,7 +113,7 @@ async function renderFrames(
 
 		for (let i = 0; i < pictureIds.length; i++) {
 			if (!stage.pictures.includes(pictureIds[i])) continue;
-			const anim = ANIMATIONS[`${stage.class}_${i + 1}`];
+			const anim = ANIMATIONS[pictureAnimationKey(stage.class, i)];
 			if (!anim) continue;
 			const frame = resolvePictureFrame(anim, elapsed);
 			if (frame.opacity <= 0) continue;
