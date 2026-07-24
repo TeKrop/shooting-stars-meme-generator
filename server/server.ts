@@ -248,11 +248,15 @@ const server = Bun.serve({
 					format,
 					`${bytes.byteLength} bytes`,
 				);
+				// hash-named (or "doge" for the default image) rather than a
+				// fixed "shooting-stars.<ext>" so exporting the same image
+				// twice, or several different ones, don't collide on disk
+				const filename = `${hash || "doge"}.${format}`;
 				return withSecurityHeaders(
 					new Response(bytes, {
 						headers: {
 							"Content-Type": EXPORT_CONTENT_TYPE[format],
-							"Content-Disposition": `attachment; filename="shooting-stars.${format}"`,
+							"Content-Disposition": `attachment; filename="${filename}"`,
 						},
 					}),
 				);

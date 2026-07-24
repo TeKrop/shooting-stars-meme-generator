@@ -111,7 +111,7 @@ export function initExport() {
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement("a");
 			a.href = url;
-			a.download = `shooting-stars.${format}`;
+			a.download = `${hash || "doge"}.${format}`;
 			a.click();
 			URL.revokeObjectURL(url);
 		} catch {

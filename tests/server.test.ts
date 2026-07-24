@@ -206,6 +206,11 @@ describe("GET /export/*", () => {
 		);
 		expect(res.status).toBe(200);
 		expect(res.headers.get("Content-Type")).toBe("video/mp4");
+		// "doge" (not a generic "shooting-stars") since no hash was given —
+		// keeps exports of different images/hashes from overwriting each other
+		expect(res.headers.get("Content-Disposition")).toBe(
+			'attachment; filename="doge.mp4"',
+		);
 		const bytes = await res.arrayBuffer();
 		expect(bytes.byteLength).toBeGreaterThan(1000);
 	}, 30_000);
