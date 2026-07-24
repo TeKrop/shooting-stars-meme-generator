@@ -1,3 +1,10 @@
+# [2.8.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.7.0...v2.8.0) (2026-07-24)
+
+
+### Features
+
+* add background video volume control ([#36](https://github.com/TeKrop/shooting-stars-meme-generator/issues/36)) ([ceb8edb](https://github.com/TeKrop/shooting-stars-meme-generator/commit/ceb8edb6fc6643a090758ea8604ffb2835a47bb1))
+
 # [2.7.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.6.1...v2.7.0) (2026-07-24)
 
 
