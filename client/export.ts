@@ -36,6 +36,20 @@ const GIF_MAX_RESOLUTION: Resolution = "360p";
 const GIF_MAX_FPS: FrameRate = 24;
 const RESOLUTION_ORDER: Resolution[] = ["360p", "480p", "720p"];
 
+// mirrors server/export.ts's GIF_SCALE_FACTOR — GIF downscales the
+// composited frame by this much right before the palette/encode stage (to
+// keep file size down without cutting the color palette), so the actual
+// GIF pixel dimensions are smaller than the chosen resolution tier's own
+// label suggests (e.g. "360p" -> an actual 320x180/180p output). The
+// resolution buttons' labels are swapped to reflect the true output size
+// whenever GIF is selected, rather than silently showing a number that
+// doesn't match what comes out.
+const GIF_SCALE_FACTOR = 0.5;
+
+function gifEffectiveLabel(resolution: string): string {
+	return `${Math.round(Number.parseInt(resolution, 10) * GIF_SCALE_FACTOR)}p`;
+}
+
 // mirrors server/export.ts's FRAME_PROGRESS_CAP — ffmpeg's own post-last-
 // frame work (palette generation + encoding for GIF especially) keeps
 // running for a few real seconds after frame-piping progress tops out here,
@@ -117,17 +131,20 @@ export function initExport() {
 
 	// disables the resolution/framerate options above the GIF cap when GIF
 	// is selected (falling back the current selection if it's now disabled),
-	// re-enables them otherwise
+	// re-enables them otherwise. Also relabels resolution buttons to their
+	// true GIF output size (see GIF_SCALE_FACTOR above) while GIF is active.
 	function applyGifCap() {
 		const isGif = getSelected(formatGroup) === "gif";
 
 		for (const btn of resolutionGroup.querySelectorAll<HTMLButtonElement>(
 			"button",
 		)) {
+			const value = btn.dataset.value ?? "";
 			btn.disabled =
 				isGif &&
-				RESOLUTION_ORDER.indexOf(btn.dataset.value as Resolution) >
+				RESOLUTION_ORDER.indexOf(value as Resolution) >
 					RESOLUTION_ORDER.indexOf(GIF_MAX_RESOLUTION);
+			btn.textContent = isGif ? gifEffectiveLabel(value) : value;
 		}
 		for (const btn of fpsGroup.querySelectorAll<HTMLButtonElement>("button")) {
 			btn.disabled = isGif && Number(btn.dataset.value) > GIF_MAX_FPS;
