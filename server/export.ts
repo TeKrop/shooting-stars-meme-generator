@@ -13,6 +13,7 @@ import { ANIMATION_TIMELINE } from "../client/animation-timeline";
 import { ANIMATIONS, resolvePictureFrame } from "./keyframes";
 
 export type Orientation = "landscape" | "portrait";
+export type ExportFormat = "mp4" | "webm";
 
 // 480p — smaller than the source background.mp4 (1280x720), traded for
 // faster encodes; bgFilter below scales the source down to match regardless
@@ -80,6 +81,7 @@ async function renderFrames(
 	imagePath: string,
 	orientation: Orientation,
 	onFrame: (buffer: Buffer) => Promise<void> | void,
+	onProgress?: (percent: number) => void,
 ): Promise<void> {
 	const viewport = VIEWPORTS[orientation];
 	const scale = travelScale(viewport.width);
@@ -149,6 +151,11 @@ async function renderFrames(
 		}
 
 		await onFrame(canvas.data());
+		// frames are piped into ffmpeg as they're generated (not rendered
+		// up front then encoded in a second pass), so "frames sent so far"
+		// tracks real encode progress closely enough — no need to parse
+		// ffmpeg's own stderr progress output for this
+		onProgress?.(Math.round(((n + 1) / totalFrames) * 100));
 	}
 }
 
@@ -174,13 +181,37 @@ async function runFfmpeg(
 
 const backgroundVideoPath = `${import.meta.dir}/../client/public/videos/background.mp4`;
 
+// background.mp4's own AAC audio track can be copied byte-for-byte into an
+// MP4 output (same container family), but WebM can't carry AAC at all —
+// vorbis is the traditional, always-available WebM audio codec, so that
+// format re-encodes instead of copying.
+const ENCODE_ARGS: Record<string, string[]> = {
+	mp4: ["-c:a", "copy", "-c:v", "libx264", "-preset", "ultrafast"],
+	webm: [
+		"-c:a",
+		"libvorbis",
+		"-c:v",
+		"libvpx",
+		"-deadline",
+		"realtime",
+		"-cpu-used",
+		"8",
+		"-crf",
+		"30",
+		"-b:v",
+		"1M",
+	],
+};
+
 export async function renderExport(
 	imagePath: string,
 	orientation: Orientation,
+	format: ExportFormat,
 	dir: string,
+	onProgress?: (percent: number) => void,
 ): Promise<string> {
 	const viewport = VIEWPORTS[orientation];
-	const outPath = join(dir, "export.mp4");
+	const outPath = join(dir, `export.${format}`);
 
 	// cover-crops the source background.mp4 (1280x720) down to the export's
 	// viewport — for portrait this also reshapes the aspect ratio, matching
@@ -207,27 +238,19 @@ export async function renderExport(
 			`[0:v]${bgFilter}[bg];[bg][1:v]overlay=shortest=1[comp]`,
 			"-map",
 			"[comp]",
-			// background.mp4 already carries a quiet AAC audio track (the same
-			// one the live page plays at 5% volume) — passthrough-copy it
-			// into the export rather than re-encoding, and "-shortest" trims
-			// it to match the (possibly shorter) rendered video length so it
-			// doesn't play on past the last frame
+			// "-shortest" trims the (possibly re-encoded) audio track to match
+			// the rendered video length so it doesn't play on past the last frame
 			"-map",
 			"0:a?",
-			"-c:a",
-			"copy",
+			...ENCODE_ARGS[format],
 			"-shortest",
-			"-c:v",
-			"libx264",
-			"-preset",
-			"ultrafast",
 			"-pix_fmt",
 			"yuv420p",
 			"-y",
 			outPath,
 		],
 		async (write) => {
-			await renderFrames(imagePath, orientation, write);
+			await renderFrames(imagePath, orientation, write, onProgress);
 		},
 	);
 

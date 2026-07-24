@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import randomstring from "randomstring";
 import index from "../client/index.html";
-import { renderExport } from "./export";
+import { type ExportFormat, renderExport } from "./export";
 
 // Fixed on purpose: the app always listens on 9595 inside the container (or
 // on the host, if run directly with `bun server/server.ts`). Only the Docker
@@ -119,8 +119,16 @@ const dogePath = `${import.meta.dir}/../client/public/img/doge.png`;
 
 // a render is fast now (no headless browser to wait on), but still not
 // free — a single-slot lock is simpler than a real job queue for how
-// rarely concurrent exports will actually happen
+// rarely concurrent exports will actually happen. exportProgress (0-100)
+// is read by '/export-status' while a render is in flight, so the client
+// can show real progress instead of a bare spinner.
 let exportInProgress = false;
+let exportProgress = 0;
+
+const EXPORT_CONTENT_TYPE: Record<ExportFormat, string> = {
+	mp4: "video/mp4",
+	webm: "video/webm",
+};
 
 const server = Bun.serve({
 	port: HTTP_PORT,
@@ -216,24 +224,35 @@ const server = Bun.serve({
 				url.searchParams.get("orientation") === "portrait"
 					? "portrait"
 					: "landscape";
+			const format: ExportFormat =
+				url.searchParams.get("format") === "webm" ? "webm" : "mp4";
 
 			exportInProgress = true;
+			exportProgress = 0;
 			const dir = await mkdtemp(join(tmpdir(), "shooting-stars-export-"));
 			try {
-				const outputPath = await renderExport(imagePath, orientation, dir);
+				const outputPath = await renderExport(
+					imagePath,
+					orientation,
+					format,
+					dir,
+					(percent) => {
+						exportProgress = percent;
+					},
+				);
 				const bytes = await Bun.file(outputPath).arrayBuffer();
 				log(
 					"export OK:",
 					hash || "(default)",
 					orientation,
+					format,
 					`${bytes.byteLength} bytes`,
 				);
 				return withSecurityHeaders(
 					new Response(bytes, {
 						headers: {
-							"Content-Type": "video/mp4",
-							"Content-Disposition":
-								'attachment; filename="shooting-stars.mp4"',
+							"Content-Type": EXPORT_CONTENT_TYPE[format],
+							"Content-Disposition": `attachment; filename="shooting-stars.${format}"`,
 						},
 					}),
 				);
@@ -247,6 +266,19 @@ const server = Bun.serve({
 				await rm(dir, { recursive: true, force: true });
 			}
 		},
+
+		// polled by the client while an export is in flight (see
+		// client/export.ts) to show real render progress instead of a bare
+		// spinner — a separate top-level path rather than nesting under
+		// '/export/' so it can never collide with that route's wildcard hash
+		// matching (an uploaded image could theoretically hash to "status")
+		"/export-status": () =>
+			withSecurityHeaders(
+				Response.json({
+					inProgress: exportInProgress,
+					percent: exportProgress,
+				}),
+			),
 
 		// any other path is a client-side-routed uploaded-image hash: serve the same SPA shell
 		"/*": index,

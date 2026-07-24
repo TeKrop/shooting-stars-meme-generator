@@ -1,13 +1,18 @@
 // server-side export: hits /export/<hash>, which renders the animation
 // with a native canvas + ffmpeg (see server/export.ts) — no headless
-// browser, so this is fast enough that the dock button's spinner is only
-// up for roughly as long as the render + download take, not ~25s.
+// browser, so this is fast enough that the dock button's progress readout
+// is only up for roughly as long as the render + download take, not ~25s.
+
+type ExportFormat = "mp4" | "webm";
 
 const EXPORT_ERROR_MESSAGE = "Couldn't export the animation. Please try again.";
 const EXPORT_ERROR_DISMISS_MS = 6000;
+const PROGRESS_POLL_MS = 200;
 
 export function initExport() {
+	const exportGroup = document.getElementById("export-group") as HTMLElement;
 	const exportBtn = document.getElementById("export-btn") as HTMLButtonElement;
+	const exportMenu = document.getElementById("export-menu") as HTMLElement;
 
 	// reuses the same toast element preview.ts uses for upload errors — it's
 	// a generic dismissible message, not upload-specific despite the id
@@ -24,11 +29,46 @@ export function initExport() {
 		}, EXPORT_ERROR_DISMISS_MS);
 	}
 
-	exportBtn.addEventListener("click", runExport);
+	function setMenuOpen(open: boolean) {
+		exportMenu.hidden = !open;
+		exportBtn.setAttribute("aria-expanded", String(open));
+	}
 
-	async function runExport() {
+	exportBtn.addEventListener("click", () => {
+		if (exportBtn.disabled) return;
+		setMenuOpen(!!exportMenu.hidden);
+	});
+
+	// closes the popover on any click outside the group, rather than wiring
+	// per-option blur handling
+	document.addEventListener("click", (e) => {
+		if (!exportGroup.contains(e.target as Node)) setMenuOpen(false);
+	});
+
+	for (const option of exportMenu.querySelectorAll<HTMLButtonElement>(
+		".export-option",
+	)) {
+		option.addEventListener("click", () => {
+			setMenuOpen(false);
+			runExport(option.dataset.format as ExportFormat);
+		});
+	}
+
+	async function pollProgress(): Promise<void> {
+		try {
+			const res = await fetch("/export-status");
+			const { percent } = (await res.json()) as { percent: number };
+			exportBtn.textContent = `${percent}%`;
+		} catch {
+			// a missed tick just leaves the last known percentage on screen
+		}
+	}
+
+	async function runExport(format: ExportFormat) {
 		exportBtn.disabled = true;
 		exportBtn.classList.add("is-loading");
+		exportBtn.textContent = "0%";
+		const progressTimer = setInterval(pollProgress, PROGRESS_POLL_MS);
 
 		const hash =
 			window.location.pathname !== "/" ? window.location.pathname.slice(1) : "";
@@ -37,7 +77,9 @@ export function initExport() {
 			: "landscape";
 
 		try {
-			const res = await fetch(`/export/${hash}?orientation=${orientation}`);
+			const res = await fetch(
+				`/export/${hash}?orientation=${orientation}&format=${format}`,
+			);
 			if (!res.ok) {
 				showError(EXPORT_ERROR_MESSAGE);
 				return;
@@ -47,14 +89,16 @@ export function initExport() {
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement("a");
 			a.href = url;
-			a.download = "shooting-stars.mp4";
+			a.download = `shooting-stars.${format}`;
 			a.click();
 			URL.revokeObjectURL(url);
 		} catch {
 			showError(EXPORT_ERROR_MESSAGE);
 		} finally {
+			clearInterval(progressTimer);
 			exportBtn.disabled = false;
 			exportBtn.classList.remove("is-loading");
+			exportBtn.textContent = "💾";
 		}
 	}
 }

@@ -209,6 +209,49 @@ describe("GET /export/*", () => {
 		const bytes = await res.arrayBuffer();
 		expect(bytes.byteLength).toBeGreaterThan(1000);
 	}, 30_000);
+
+	// WebM re-encodes both video (VP8) and audio (vorbis, since WebM can't
+	// carry background.mp4's AAC track the way MP4 can) rather than copying,
+	// so it's slower than the MP4 case above — still well inside the timeout
+	test("renders the default doge animation as a real WebM export", async () => {
+		const res = await fetch(
+			new URL("/export/?orientation=landscape&format=webm", server.url),
+		);
+		expect(res.status).toBe(200);
+		expect(res.headers.get("Content-Type")).toBe("video/webm");
+		const bytes = await res.arrayBuffer();
+		expect(bytes.byteLength).toBeGreaterThan(1000);
+	}, 30_000);
+
+	test("defaults to MP4 for an unrecognized format value", async () => {
+		const res = await fetch(
+			new URL("/export/?format=not-a-real-format", server.url),
+		);
+		expect(res.status).toBe(200);
+		expect(res.headers.get("Content-Type")).toBe("video/mp4");
+	}, 30_000);
+});
+
+describe("GET /export-status", () => {
+	test("reports not in progress when idle", async () => {
+		const res = await fetch(new URL("/export-status", server.url));
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body.inProgress).toBe(false);
+	});
+
+	test("reports progress while an export is running", async () => {
+		const exportPromise = fetch(
+			new URL("/export/?orientation=portrait", server.url),
+		);
+		// give the render loop a moment to start producing frames
+		await new Promise((resolve) => setTimeout(resolve, 300));
+		const statusRes = await fetch(new URL("/export-status", server.url));
+		const status = await statusRes.json();
+		expect(status.inProgress).toBe(true);
+		expect(status.percent).toBeGreaterThan(0);
+		await exportPromise;
+	}, 30_000);
 });
 
 describe("GET /videos/*", () => {
