@@ -2,6 +2,7 @@ import { version } from "../package.json";
 import { restartAnimation, startAnimation } from "./animation";
 import { initExport } from "./export";
 import { initPreviewDialog } from "./preview";
+import { initVolumeControl } from "./volume";
 
 const COPY_TOAST_DISMISS_MS = 4000;
 
@@ -72,6 +73,7 @@ restartAnimation();
 
 initPreviewDialog(applyUploadedImage);
 initExport();
+initVolumeControl();
 
 /**
  * Swaps in a freshly uploaded image without a full page reload: updates the

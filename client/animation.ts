@@ -9,6 +9,15 @@ video.volume = 0.05;
 // once the video has ended, restart the animation
 video.addEventListener("ended", restartAnimation, false);
 
+/**
+ * Lets other modules (currently just volume.ts) read/mutate playback
+ * properties like .volume/.muted without each grabbing their own
+ * `document.getElementById("video")` reference
+ */
+export function getVideoElement(): HTMLVideoElement {
+	return video;
+}
+
 const landing = document.getElementById("landing") as HTMLElement;
 const starfield = document.getElementById("starfield") as HTMLElement;
 const tapToPlay = document.getElementById("tap-to-play") as HTMLElement;

@@ -256,6 +256,61 @@
 		}
 	}
 
+	/* the volume popover that opens from #volume-btn — same shape as
+       #export-group/#export-menu above */
+	#volume-group {
+		position: relative;
+	}
+
+	#volume-menu {
+		position: absolute;
+		top: calc(100% + 8px);
+		left: 0;
+		z-index: 3;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 12px;
+		background: rgba(var(--color-void-rgb), 0.85);
+		border: 1.5px solid rgba(var(--color-cyan-rgb), 0.5);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	#mute-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 24px;
+		height: 24px;
+		padding: 0;
+		font-size: 15px;
+		color: var(--color-chrome);
+		background: transparent;
+		border: none;
+		cursor: pointer;
+
+		&:hover,
+		&:focus-visible {
+			color: var(--color-cyan);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--color-cyan);
+			outline-offset: 2px;
+		}
+	}
+
+	#volume-slider {
+		width: 100px;
+		accent-color: var(--color-cyan);
+		cursor: pointer;
+	}
+
 	/* purely an internal control now — only ever clicked programmatically by
        #source-browse-btn inside the preview dialog, never labeled/focused
        directly (see tabindex="-1" in index.html) */
