@@ -104,6 +104,15 @@
        the still-animating starfield/video underneath on a mobile GPU — so
        here the dialog goes fullscreen and opaque instead of floating+blurred */
 	@media (hover: none) and (pointer: coarse) {
+		/* the starfield's continuous background-position/opacity keyframes
+           over a 7-layer radial-gradient are a real repaint cost on mobile
+           GPUs, running non-stop even on the idle landing screen — it's
+           pure decoration (not the video, which stays untouched), so
+           hiding it here just falls back to body's own black background */
+		#starfield {
+			display: none;
+		}
+
 		/* the UA default for dialog:modal caps it at ~100% minus its own
            border/margin and sets overflow:auto — without overriding that
            cap here, the card below (forced to a true 100vw/100dvh) ends up
