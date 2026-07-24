@@ -33,26 +33,6 @@ const uploadsDir = `${import.meta.dir}/../uploads`;
 // just a sane upper bound, not a tight fit
 const MAX_UPLOAD_SIZE = 15 * 1024 * 1024;
 
-// extension to store the upload under, so Bun can infer the right
-// Content-Type when serving it back — the public URL/hash stays bare
-// regardless (see resolveUpload below). New uploads are PNG-only (see
-// '/upload' below, which always re-encodes client-side before sending) —
-// the rest of this map exists purely so uploads from before that
-// restriction still resolve/serve correctly (see KNOWN_SUFFIXES).
-const EXTENSION_BY_MIME: Record<string, string> = {
-	"image/png": "png",
-	"image/jpeg": "jpg",
-	"image/gif": "gif",
-	"image/webp": "webp",
-	"image/svg+xml": "svg",
-	"image/bmp": "bmp",
-	"image/avif": "avif",
-	"image/x-icon": "ico",
-	"image/tiff": "tiff",
-	"image/heic": "heic",
-	"image/heif": "heif",
-};
-
 function log(...args: unknown[]) {
 	console.log(`[${new Date().toISOString()}]`, ...args);
 }
@@ -90,43 +70,16 @@ function serveFrom(dir: string, prefix: string) {
 	};
 }
 
-// uploads are stored on disk as `<hash>.<ext>` (see '/upload' below) but
-// served from the bare hash, so resolve the real filename by checking the
-// handful of extensions we actually write (plus the bare name, for the
-// unrecognized-MIME-type fallback in '/upload') — a fixed set of direct
-// stats, not a directory scan, so this stays O(1) regardless of how many
-// files are in `uploadsDir`.
+// uploads are stored on disk as `<hash>.png` (see '/upload' below) but
+// served from the bare hash, so resolve the real filename here.
 // `HASH_PATTERN` must be checked first: an unvalidated hash could otherwise
 // contain '../' and escape `uploadsDir`.
 const HASH_PATTERN = /^[a-zA-Z0-9]+$/;
-const KNOWN_EXTENSIONS = Object.values(EXTENSION_BY_MIME);
-const KNOWN_SUFFIXES = ["", ...KNOWN_EXTENSIONS.map((ext) => `.${ext}`)];
 
 async function resolveUpload(hash: string): Promise<string | undefined> {
 	if (!HASH_PATTERN.test(hash)) return undefined;
-	for (const suffix of KNOWN_SUFFIXES) {
-		const path = `${uploadsDir}/${hash}${suffix}`;
-		if (await Bun.file(path).exists()) return path;
-	}
-	return undefined;
-}
-
-// pre-fix uploads were stored bare (no extension), so Bun can't infer their
-// Content-Type on serve — peek at the bytes to at least recognize SVGs,
-// since that's the one format browsers refuse to render inline without the
-// correct header (raster formats already get rendered via the browser's own
-// sniffing regardless of Content-Type). Only called for bare files, which
-// is a fixed, shrinking set — not on every request.
-const SVG_ROOT_TAG = /<svg[\s>]/i;
-
-async function sniffLegacyContentType(
-	file: ReturnType<typeof Bun.file>,
-): Promise<string | undefined> {
-	const head = await file
-		.slice(0, 1024)
-		.text()
-		.catch(() => "");
-	return SVG_ROOT_TAG.test(head) ? "image/svg+xml" : undefined;
+	const path = `${uploadsDir}/${hash}.png`;
+	return (await Bun.file(path).exists()) ? path : undefined;
 }
 
 const dogePath = `${import.meta.dir}/../client/public/img/doge.png`;
@@ -269,12 +222,7 @@ const server = Bun.serve({
 				return withSecurityHeaders(new Response("Not Found", { status: 404 }));
 			}
 
-			const file = Bun.file(path);
-			const response = new Response(file);
-			if (path === `${uploadsDir}/${hash}`) {
-				const sniffed = await sniffLegacyContentType(file);
-				if (sniffed) response.headers.set("Content-Type", sniffed);
-			}
+			const response = new Response(Bun.file(path));
 			return withSecurityHeaders(response);
 		},
 		// script.ts references this dynamically at runtime (not statically
