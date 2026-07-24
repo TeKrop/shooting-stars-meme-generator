@@ -1,3 +1,10 @@
+# [2.9.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.8.2...v2.9.0) (2026-07-24)
+
+
+### Features
+
+* export options dialog (orientation/resolution/framerate/GIF) ([#39](https://github.com/TeKrop/shooting-stars-meme-generator/issues/39)) ([aba483d](https://github.com/TeKrop/shooting-stars-meme-generator/commit/aba483d499920da637fc59d4d2acd2513159b783))
+
 ## [2.8.2](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.8.1...v2.8.2) (2026-07-24)
 
 
