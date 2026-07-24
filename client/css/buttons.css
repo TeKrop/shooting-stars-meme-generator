@@ -211,19 +211,6 @@
 		}
 	}
 
-	/* swaps the icon for a live percentage (see client/export.ts's
-	   /export-status polling) while an export is rendering server-side —
-	   smaller font so "100%" still fits the button, and full opacity
-	   despite :disabled so the readout stays legible while working */
-	.dock-btn.is-loading {
-		font-size: 12px;
-		font-weight: 700;
-
-		&:disabled {
-			opacity: 1;
-		}
-	}
-
 	/* the format picker that opens from #export-btn */
 	#export-group {
 		position: relative;

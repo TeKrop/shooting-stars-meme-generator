@@ -1,7 +1,7 @@
 // server-side export: hits /export/<hash>, which renders the animation
 // with a native canvas + ffmpeg (see server/export.ts) — no headless
-// browser, so this is fast enough that the dock button's progress readout
-// is only up for roughly as long as the render + download take, not ~25s.
+// browser, so this is fast enough that the progress dialog is only up for
+// roughly as long as the render + download take, not ~25s.
 
 type ExportFormat = "mp4" | "webm";
 
@@ -13,6 +13,21 @@ export function initExport() {
 	const exportGroup = document.getElementById("export-group") as HTMLElement;
 	const exportBtn = document.getElementById("export-btn") as HTMLButtonElement;
 	const exportMenu = document.getElementById("export-menu") as HTMLElement;
+
+	const progressDialog = document.getElementById(
+		"export-progress-dialog",
+	) as HTMLDialogElement;
+	const progressBar = document.getElementById(
+		"export-progress-bar",
+	) as HTMLProgressElement;
+	const progressLabel = document.getElementById(
+		"export-progress-label",
+	) as HTMLElement;
+
+	// no cancel action exists (aborting a render mid-flight isn't wired up),
+	// so block the Escape-key dismissal a native <dialog> offers by default —
+	// the dialog only closes when runExport() is done, via close() below
+	progressDialog.addEventListener("cancel", (e) => e.preventDefault());
 
 	// reuses the same toast element preview.ts uses for upload errors — it's
 	// a generic dismissible message, not upload-specific despite the id
@@ -54,11 +69,16 @@ export function initExport() {
 		});
 	}
 
+	function setProgress(percent: number) {
+		progressBar.value = percent;
+		progressLabel.textContent = `${percent}%`;
+	}
+
 	async function pollProgress(): Promise<void> {
 		try {
 			const res = await fetch("/export-status");
 			const { percent } = (await res.json()) as { percent: number };
-			exportBtn.textContent = `${percent}%`;
+			setProgress(percent);
 		} catch {
 			// a missed tick just leaves the last known percentage on screen
 		}
@@ -66,8 +86,10 @@ export function initExport() {
 
 	async function runExport(format: ExportFormat) {
 		exportBtn.disabled = true;
-		exportBtn.classList.add("is-loading");
-		exportBtn.textContent = "0%";
+		setProgress(0);
+		// showModal() makes the rest of the page inert on its own — nothing
+		// else is reachable by click or keyboard while a render is in flight
+		progressDialog.showModal();
 		const progressTimer = setInterval(pollProgress, PROGRESS_POLL_MS);
 
 		const hash =
@@ -96,9 +118,8 @@ export function initExport() {
 			showError(EXPORT_ERROR_MESSAGE);
 		} finally {
 			clearInterval(progressTimer);
+			progressDialog.close();
 			exportBtn.disabled = false;
-			exportBtn.classList.remove("is-loading");
-			exportBtn.textContent = "💾";
 		}
 	}
 }
