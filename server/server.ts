@@ -1,7 +1,7 @@
+import { randomInt } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import randomstring from "randomstring";
 import index from "../client/index.html";
 import {
 	clampForGif,
@@ -145,15 +145,26 @@ const EXPORT_CONTENT_TYPE: Record<ExportFormat, string> = {
 	gif: "image/gif",
 };
 
+const HASH_CHARS =
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+function randomHash(length: number): string {
+	let hash = "";
+	for (let i = 0; i < length; i++) {
+		hash += HASH_CHARS[randomInt(HASH_CHARS.length)];
+	}
+	return hash;
+}
+
 // generates a random upload hash, retrying on an on-disk name collision —
 // collision odds are ~1e-8 at default HASH_LENGTH (see MAX_HASH_ATTEMPTS
 // above), so a fixed small retry cap is enough
 async function generateUploadHash(): Promise<string> {
-	let hash = randomstring.generate(HASH_LENGTH);
+	let hash = "";
 	for (let attempts = 0; attempts < MAX_HASH_ATTEMPTS; attempts++) {
+		hash = randomHash(HASH_LENGTH);
 		const collides = await Bun.file(`${uploadsDir}/${hash}.png`).exists();
 		if (!collides) break;
-		hash = randomstring.generate(HASH_LENGTH);
 	}
 	return hash;
 }
