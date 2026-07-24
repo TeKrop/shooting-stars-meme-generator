@@ -1,3 +1,10 @@
+# [2.7.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.6.1...v2.7.0) (2026-07-24)
+
+
+### Features
+
+* support paste and drag-and-drop image upload ([#35](https://github.com/TeKrop/shooting-stars-meme-generator/issues/35)) ([39f5406](https://github.com/TeKrop/shooting-stars-meme-generator/commit/39f540634a247bd922e7730993ecc842ba14fe8a))
+
 ## [2.6.1](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.6.0...v2.6.1) (2026-07-24)
 
 
