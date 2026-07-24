@@ -32,6 +32,13 @@
                     <button type="button" class="export-option" data-format="webm">🎬 WebM</button>
                 </div>
             </div>
+            <div id="volume-group">
+                <button type="button" id="volume-btn" class="dock-btn" title="Volume" aria-label="Volume" aria-haspopup="true" aria-expanded="false">🔊</button>
+                <div id="volume-menu" hidden>
+                    <button type="button" id="mute-btn" title="Mute" aria-label="Mute" aria-pressed="false">🔊</button>
+                    <input type="range" id="volume-slider" min="0" max="100" value="5" aria-label="Volume">
+                </div>
+            </div>
             <button type="button" id="copy-link-btn" class="dock-btn" title="Copy link" aria-label="Copy link">🔗</button>
         </div>
         <div id="landing">
