@@ -10,7 +10,9 @@
 		"typecheck": "tsc --noEmit",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
-		"check": "bun run typecheck && bun run lint"
+		"generate:css": "bun scripts/generate-stars-css.ts",
+		"verify:css": "bun scripts/generate-stars-css.ts --check",
+		"check": "bun run typecheck && bun run lint && bun run verify:css"
 	},
 	"keywords": [
 		"shooting",
@@ -21,6 +23,7 @@
 	"author": "Valentin PORCHET",
 	"license": "MIT",
 	"dependencies": {
+		"@napi-rs/canvas": "^1.0.2",
 		"cropperjs": "^2.1.1",
 		"randomstring": "^1.3.1"
 	},

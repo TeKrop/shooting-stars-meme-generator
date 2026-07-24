@@ -1,5 +1,9 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import randomstring from "randomstring";
 import index from "../client/index.html";
+import { type ExportFormat, renderExportInWorker } from "./export";
 
 // Fixed on purpose: the app always listens on 9595 inside the container (or
 // on the host, if run directly with `bun server/server.ts`). Only the Docker
@@ -111,8 +115,29 @@ async function sniffLegacyContentType(
 	return SVG_ROOT_TAG.test(head) ? "image/svg+xml" : undefined;
 }
 
+const dogePath = `${import.meta.dir}/../client/public/img/doge.png`;
+
+// a render is fast now (no headless browser to wait on), but still not
+// free — a single-slot lock is simpler than a real job queue for how
+// rarely concurrent exports will actually happen. exportProgress (0-100)
+// is read by '/export-status' while a render is in flight, so the client
+// can show real progress instead of a bare spinner.
+let exportInProgress = false;
+let exportProgress = 0;
+
+const EXPORT_CONTENT_TYPE: Record<ExportFormat, string> = {
+	mp4: "video/mp4",
+	webm: "video/webm",
+};
+
 const server = Bun.serve({
 	port: HTTP_PORT,
+	// Bun's default is 10s — too short for '/export/*'. No response bytes
+	// are written until the whole render finishes (a single Response at the
+	// end, not streamed), so the entire render duration counts against this
+	// timeout. Renders have been observed to take ~3-5s under normal load;
+	// generous margin here for slower/busier hosts.
+	idleTimeout: 30,
 	routes: {
 		"/": index,
 
@@ -178,6 +203,83 @@ const server = Bun.serve({
 			`${import.meta.dir}/../client/public/videos`,
 			"/videos/",
 		),
+
+		"/export/*": async (req) => {
+			const url = new URL(req.url);
+			const hash = url.pathname.slice("/export/".length);
+			const imagePath = hash ? await resolveUpload(hash) : dogePath;
+			if (!imagePath) {
+				return withSecurityHeaders(new Response("Not Found", { status: 404 }));
+			}
+
+			if (exportInProgress) {
+				return withSecurityHeaders(
+					new Response("An export is already in progress, try again shortly", {
+						status: 429,
+					}),
+				);
+			}
+
+			const orientation =
+				url.searchParams.get("orientation") === "portrait"
+					? "portrait"
+					: "landscape";
+			const format: ExportFormat =
+				url.searchParams.get("format") === "webm" ? "webm" : "mp4";
+
+			exportInProgress = true;
+			exportProgress = 0;
+			const dir = await mkdtemp(join(tmpdir(), "shooting-stars-export-"));
+			try {
+				const outputPath = await renderExportInWorker(
+					{ imagePath, orientation, format, dir },
+					(percent) => {
+						exportProgress = percent;
+					},
+				);
+				const bytes = await Bun.file(outputPath).arrayBuffer();
+				log(
+					"export OK:",
+					hash || "(default)",
+					orientation,
+					format,
+					`${bytes.byteLength} bytes`,
+				);
+				// hash-named (or "doge" for the default image) rather than a
+				// fixed "shooting-stars.<ext>" so exporting the same image
+				// twice, or several different ones, don't collide on disk
+				const filename = `${hash || "doge"}.${format}`;
+				return withSecurityHeaders(
+					new Response(bytes, {
+						headers: {
+							"Content-Type": EXPORT_CONTENT_TYPE[format],
+							"Content-Disposition": `attachment; filename="${filename}"`,
+						},
+					}),
+				);
+			} catch (err) {
+				log("export failed:", err);
+				return withSecurityHeaders(
+					new Response("Export failed", { status: 500 }),
+				);
+			} finally {
+				exportInProgress = false;
+				await rm(dir, { recursive: true, force: true });
+			}
+		},
+
+		// polled by the client while an export is in flight (see
+		// client/export.ts) to show real render progress instead of a bare
+		// spinner — a separate top-level path rather than nesting under
+		// '/export/' so it can never collide with that route's wildcard hash
+		// matching (an uploaded image could theoretically hash to "status")
+		"/export-status": () =>
+			withSecurityHeaders(
+				Response.json({
+					inProgress: exportInProgress,
+					percent: exportProgress,
+				}),
+			),
 
 		// any other path is a client-side-routed uploaded-image hash: serve the same SPA shell
 		"/*": index,

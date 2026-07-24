@@ -1,6 +1,8 @@
 // the shooting-stars choreography engine: launch prompt + the timed
 // picture/video sequence itself
 
+import { ANIMATION_TIMELINE } from "./animation-timeline";
+
 const video = document.getElementById("video") as HTMLVideoElement;
 // set video volume to 5%
 video.volume = 0.05;
@@ -64,10 +66,8 @@ function showLaunchPrompt() {
 	}
 }
 
-type AnimationStage = {
-	class: string;
-	pictures: string[];
-};
+// pictures classes
+const pictures = ["pict1", "pict2", "pict3", "pict4", "pict5", "pict6"];
 
 /**
  * Start the shooting stars animation — always (re)starts cleanly, so
@@ -94,54 +94,17 @@ export function startAnimation() {
 	video.currentTime = 0;
 	video.play();
 
-	// times and classes associated with images
-	const times: Record<number, AnimationStage> = {
-		0: {
-			class: "init",
-			pictures: [],
-		},
-		3900: {
-			class: "spaceone",
-			pictures: ["pict1"],
-		},
-		7700: {
-			class: "dolphins",
-			pictures: ["pict1", "pict2"],
-		},
-		11600: {
-			class: "spacetwo",
-			pictures: ["pict1", "pict2", "pict3", "pict4", "pict5", "pict6"],
-		},
-		15500: {
-			class: "dark",
-			pictures: [],
-		},
-		17100: {
-			class: "microone",
-			pictures: ["pict1"],
-		},
-		19300: {
-			class: "microtwo",
-			pictures: ["pict1"],
-		},
-		24800: {
-			class: "init",
-			pictures: [],
-		},
-	};
-
-	// pictures classes
-	const pictures = ["pict1", "pict2", "pict3", "pict4", "pict5", "pict6"];
-
 	// main loop for class change events
-	for (const time in times) {
+	for (const time in ANIMATION_TIMELINE) {
 		const id = setTimeout(() => {
 			// foreach pictures
 			for (let i = pictures.length - 1; i >= 0; i--) {
 				const img = document.getElementById(pictures[i]) as HTMLElement;
 				// if the picture is in the current animation array, add the correct class
-				if (times[Number(time)].pictures.indexOf(pictures[i]) > -1) {
-					img.className = `${times[Number(time)].class}_${i + 1}`;
+				if (
+					ANIMATION_TIMELINE[Number(time)].pictures.indexOf(pictures[i]) > -1
+				) {
+					img.className = `${ANIMATION_TIMELINE[Number(time)].class}_${i + 1}`;
 				} else {
 					// else, hide the picture
 					img.className = "hide";

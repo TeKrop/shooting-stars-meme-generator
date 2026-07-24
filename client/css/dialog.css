@@ -34,6 +34,55 @@
 		);
 	}
 
+	/* the export render progress dialog — a native <dialog> opened with
+	   showModal() (see client/export.ts), so the rest of the page becomes
+	   inert for free while a render is in flight, matching #preview-dialog's
+	   own backdrop treatment. Declared here (before #crop-step/#edit-step's
+	   own & > .tagline rule below) since Biome's static specificity check
+	   flags a lower-specificity selector for a related property defined
+	   after a higher-specificity one, even though the two never actually
+	   collide — see CLAUDE.md's Linting/formatting notes. */
+	dialog#export-progress-dialog {
+		border: none;
+		padding: 0;
+		background: transparent;
+
+		&::backdrop {
+			background: rgba(var(--color-void-rgb), 0.75);
+			backdrop-filter: blur(2px);
+		}
+	}
+
+	.export-progress-card {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 16px;
+		min-width: 260px;
+		padding: 28px 36px;
+		border: 1.5px solid rgba(var(--color-cyan-rgb), 0.4);
+		background: rgba(var(--color-void-rgb), 0.85);
+		backdrop-filter: blur(14px);
+		-webkit-backdrop-filter: blur(14px);
+		box-shadow:
+			0 20px 60px rgba(0, 0, 0, 0.5),
+			0 0 40px rgba(var(--color-magenta-rgb), 0.12);
+		clip-path: polygon(
+			20px 0,
+			100% 0,
+			100% calc(100% - 20px),
+			calc(100% - 20px) 100%,
+			0 100%,
+			0 20px
+		);
+
+		& > .tagline {
+			margin: 0;
+			font-size: 18px;
+			color: var(--color-magenta-light);
+		}
+	}
+
 	.slider-control {
 		display: flex;
 		align-items: center;
@@ -300,5 +349,41 @@
 		to {
 			transform: rotate(360deg);
 		}
+	}
+
+	#export-progress-bar {
+		width: 220px;
+		height: 14px;
+		appearance: none;
+		border: 1.5px solid rgba(var(--color-cyan-rgb), 0.5);
+		background: rgba(var(--color-void-rgb), 0.6);
+
+		&::-webkit-progress-bar {
+			background: rgba(var(--color-void-rgb), 0.6);
+		}
+
+		&::-webkit-progress-value {
+			background: linear-gradient(
+				90deg,
+				var(--color-cyan),
+				var(--color-purple)
+			);
+			transition: width 0.15s ease;
+		}
+
+		&::-moz-progress-bar {
+			background: linear-gradient(
+				90deg,
+				var(--color-cyan),
+				var(--color-purple)
+			);
+		}
+	}
+
+	#export-progress-label {
+		margin: 0;
+		color: var(--color-chrome);
+		font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+		font-size: 14px;
 	}
 }

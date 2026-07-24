@@ -25,7 +25,13 @@
         </form>
         <div id="quick-actions">
             <label for="file-upload" class="dock-btn" title="Upload your pic" aria-label="Upload your pic">📤</label>
-            <button type="button" class="dock-btn" disabled title="Export (soon)" aria-label="Export (soon)">💾</button>
+            <div id="export-group">
+                <button type="button" id="export-btn" class="dock-btn" title="Export as video" aria-label="Export as video" aria-haspopup="true" aria-expanded="false">💾</button>
+                <div id="export-menu" hidden>
+                    <button type="button" class="export-option" data-format="mp4">🎬 MP4</button>
+                    <button type="button" class="export-option" data-format="webm">🎬 WebM</button>
+                </div>
+            </div>
             <button type="button" class="dock-btn" disabled title="Copy link (soon)" aria-label="Copy link (soon)">🔗</button>
         </div>
         <div id="landing">
@@ -84,6 +90,13 @@
                     <button id="crop-next" type="button">Next ➔</button>
                     <button id="preview-confirm" type="button" hidden>✦ Upload ✦</button>
                 </div>
+            </div>
+        </dialog>
+        <dialog id="export-progress-dialog">
+            <div class="export-progress-card">
+                <p class="tagline">✦ Exporting ✦</p>
+                <progress id="export-progress-bar" max="100" value="0"></progress>
+                <p id="export-progress-label">0%</p>
             </div>
         </dialog>
         <div id="pictures-container"></div>

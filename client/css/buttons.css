@@ -211,6 +211,51 @@
 		}
 	}
 
+	/* the format picker that opens from #export-btn */
+	#export-group {
+		position: relative;
+	}
+
+	#export-menu {
+		position: absolute;
+		top: calc(100% + 8px);
+		left: 0;
+		z-index: 3;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 6px;
+		background: rgba(var(--color-void-rgb), 0.85);
+		border: 1.5px solid rgba(var(--color-cyan-rgb), 0.5);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	.export-option {
+		white-space: nowrap;
+		padding: 8px 14px;
+		font-size: 14px;
+		color: var(--color-chrome);
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		text-align: left;
+
+		&:hover,
+		&:focus-visible {
+			background: rgba(var(--color-cyan-rgb), 0.25);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--color-cyan);
+			outline-offset: -2px;
+		}
+	}
+
 	input#file-upload {
 		opacity: 0;
 		position: absolute;

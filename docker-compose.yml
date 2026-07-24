@@ -14,7 +14,17 @@ services:
     volumes:
       - ${UPLOADS_DIR:-/tmp/shooting-stars-uploads}:/app/uploads
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider --quiet http://0.0.0.0:9595 || exit 1"]
+      # wget/curl aren't installed in oven/bun:1 (Debian, since the export
+      # feature needed a non-Alpine base — see Dockerfile) the way they were
+      # on the old oven/bun:1-alpine image, so use Bun's own fetch() instead
+      # of adding a package just for this
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://0.0.0.0:9595').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
       interval: 5s
       timeout: 5s
 
@@ -31,6 +41,7 @@ services:
       - ${UPLOADS_DIR:-/tmp/shooting-stars-uploads}:/app/uploads
       - ./server:/app/server
       - ./client:/app/client
+      - ./scripts:/app/scripts
       - ./tsconfig.json:/app/tsconfig.json
       - ./biome.json:/app/biome.json
       - ./package.json:/app/package.json
