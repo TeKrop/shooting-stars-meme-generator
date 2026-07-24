@@ -1,3 +1,10 @@
+## [2.6.1](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.6.0...v2.6.1) (2026-07-24)
+
+
+### Bug Fixes
+
+* animated README preview + fix mobile animation sync ([#33](https://github.com/TeKrop/shooting-stars-meme-generator/issues/33)) ([56ba26f](https://github.com/TeKrop/shooting-stars-meme-generator/commit/56ba26f1e315b78d61e0471cca09c0f6386019da))
+
 # [2.6.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.5.0...v2.6.0) (2026-07-24)
 
 
