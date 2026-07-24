@@ -51,6 +51,13 @@ export function initVolumeControl() {
 		if (!volumeGroup.contains(e.target as Node)) setMenuOpen(false);
 	});
 
+	// Escape closes the popover regardless of which element inside it is
+	// focused, so keyboard users get the same dismissal outside-click gives
+	// mouse users
+	document.addEventListener("keydown", (e) => {
+		if (e.key === "Escape" && !volumeMenu.hidden) setMenuOpen(false);
+	});
+
 	muteBtn.addEventListener("click", () => {
 		video.muted = !video.muted;
 		updateMuteUI();
