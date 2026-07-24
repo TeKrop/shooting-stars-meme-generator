@@ -30,12 +30,10 @@ import { ANIMATIONS, resolvePictureFrame } from "./keyframes";
 
 export * from "../client/export-options";
 
-export const ORIENTATIONS: Orientation[] = ["landscape", "portrait"];
 export const RESOLUTIONS: Resolution[] = ["360p", "480p", "720p"];
 export const FRAME_RATES: FrameRate[] = [15, 24, 60];
 export const EXPORT_FORMATS: ExportFormat[] = ["mp4", "webm", "gif"];
 
-export const DEFAULT_ORIENTATION: Orientation = "landscape";
 export const DEFAULT_RESOLUTION: Resolution = "480p";
 export const DEFAULT_FPS: FrameRate = 24;
 export const DEFAULT_FORMAT: ExportFormat = "mp4";

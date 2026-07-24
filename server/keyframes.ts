@@ -747,7 +747,7 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 	},
 };
 
-function interpolate(
+export function interpolate(
 	points: ControlPoint[],
 	percent: number,
 	identity: number,
