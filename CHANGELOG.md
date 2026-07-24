@@ -1,3 +1,10 @@
+# [2.5.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.4.1...v2.5.0) (2026-07-24)
+
+
+### Features
+
+* server-side animation export (MP4/WebM), no headless browser ([#31](https://github.com/TeKrop/shooting-stars-meme-generator/issues/31)) ([8a6e57c](https://github.com/TeKrop/shooting-stars-meme-generator/commit/8a6e57cfdf94e1c0c23a903e1c53e632e6635d5b))
+
 ## [2.4.1](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.4.0...v2.4.1) (2026-07-23)
 
 
