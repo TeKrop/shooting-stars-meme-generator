@@ -21,10 +21,10 @@
             Your browser does not support the video tag.
         </video>
         <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post">
-            <input type="file" id="file-upload" name="file-upload" accept="image/*" />
+            <input type="file" id="file-upload" name="file-upload" accept="image/*" tabindex="-1" />
         </form>
         <div id="quick-actions">
-            <label for="file-upload" class="dock-btn" title="Upload your pic" aria-label="Upload your pic">📤</label>
+            <button type="button" class="dock-btn upload-trigger" title="Upload your pic" aria-label="Upload your pic">📤</button>
             <div id="export-group">
                 <button type="button" id="export-btn" class="dock-btn" title="Export as video" aria-label="Export as video" aria-haspopup="true" aria-expanded="false">💾</button>
                 <div id="export-menu" hidden>
@@ -46,7 +46,7 @@
                     <button type="button" id="tap-to-play" class="console-btn console-btn--primary">
                         <p></p>
                     </button>
-                    <label for="file-upload" class="console-btn console-btn--secondary">📤 Upload your pic</label>
+                    <button type="button" class="console-btn console-btn--secondary upload-trigger">📤 Upload your pic</button>
                 </div>
             </div>
         </div>
@@ -56,8 +56,17 @@
         </div>
         <dialog id="preview-dialog">
             <div class="preview-card">
-                <div id="crop-step">
-                    <p class="tagline">✦ Step 1: Crop ✦</p>
+                <div id="source-step">
+                    <p class="tagline">✦ Step 1: Add an image ✦</p>
+                    <div id="source-drop-zone">
+                        <p class="source-drop-hint">Drag &amp; drop an image here, or paste from your clipboard</p>
+                        <button type="button" id="source-browse-btn" class="console-btn console-btn--secondary">📤 Browse files</button>
+                    </div>
+                    <p id="source-error" role="alert" hidden></p>
+                </div>
+
+                <div id="crop-step" hidden>
+                    <p class="tagline">✦ Step 2: Crop ✦</p>
                     <div id="crop-area">
                         <img id="preview-img" alt="Preview">
                     </div>
@@ -65,7 +74,7 @@
                 </div>
 
                 <div id="edit-step" hidden>
-                    <p class="tagline">✦ Step 2: Transparency ✦</p>
+                    <p class="tagline">✦ Step 3: Transparency ✦</p>
                     <canvas id="edit-canvas"></canvas>
                     <div class="tool-picker">
                         <button id="tool-erase" type="button" aria-pressed="true">🧽 Erase</button>
@@ -87,7 +96,7 @@
                 <div class="preview-actions">
                     <button id="preview-cancel" type="button">✕ Cancel</button>
                     <button id="edit-back" type="button" hidden>⬅ Back</button>
-                    <button id="crop-next" type="button">Next ➔</button>
+                    <button id="crop-next" type="button" hidden>Next ➔</button>
                     <button id="preview-confirm" type="button" hidden>✦ Upload ✦</button>
                 </div>
             </div>

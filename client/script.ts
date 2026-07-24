@@ -28,19 +28,6 @@ for (let i = nbPictures; i >= 1; i--) {
 	picturesContainer.appendChild(img);
 }
 
-// the hidden file input can't rely on CSS's adjacent-sibling focus trick
-// since it has two labels in different parts of the DOM (see .file-upload-focused
-// in style.css) — toggling a class here works in every browser, unlike :has()
-const fileUpload = document.getElementById("file-upload") as HTMLInputElement;
-fileUpload.addEventListener("focus", () => {
-	if (fileUpload.matches(":focus-visible")) {
-		document.body.classList.add("file-upload-focused");
-	}
-});
-fileUpload.addEventListener("blur", () => {
-	document.body.classList.remove("file-upload-focused");
-});
-
 requireElement<HTMLElement>("app-version").textContent = `v${version}`;
 
 // copy-link: reuses the same toast element preview.ts/export.ts use for
