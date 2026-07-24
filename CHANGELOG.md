@@ -1,3 +1,10 @@
+## [2.8.1](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.8.0...v2.8.1) (2026-07-24)
+
+
+### Bug Fixes
+
+* skip upload dialog step 1 on mobile, fix fullscreen editing perf/layout ([#37](https://github.com/TeKrop/shooting-stars-meme-generator/issues/37)) ([ac74996](https://github.com/TeKrop/shooting-stars-meme-generator/commit/ac7499609f621792c7c674a7daa1c86ae4067ac3))
+
 # [2.8.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.7.0...v2.8.0) (2026-07-24)
 
 
