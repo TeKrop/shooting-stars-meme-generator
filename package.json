@@ -10,7 +10,9 @@
 		"typecheck": "tsc --noEmit",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
-		"check": "bun run typecheck && bun run lint"
+		"generate:css": "bun scripts/generate-stars-css.ts",
+		"verify:css": "bun scripts/generate-stars-css.ts --check",
+		"check": "bun run typecheck && bun run lint && bun run verify:css"
 	},
 	"keywords": [
 		"shooting",

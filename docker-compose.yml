@@ -31,6 +31,7 @@ services:
       - ${UPLOADS_DIR:-/tmp/shooting-stars-uploads}:/app/uploads
       - ./server:/app/server
       - ./client:/app/client
+      - ./scripts:/app/scripts
       - ./tsconfig.json:/app/tsconfig.json
       - ./biome.json:/app/biome.json
       - ./package.json:/app/package.json

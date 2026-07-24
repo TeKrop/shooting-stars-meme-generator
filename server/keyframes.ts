@@ -1,9 +1,11 @@
 // Hand-ported copy of client/css/stars.css's @keyframes, for the /export
-// route to render frames without a browser (see server/export.ts). Each
-// entry here must be kept in sync by hand with the matching @keyframes
-// block in stars.css — same convention CLAUDE.md already documents for
-// stars.css's durations vs animation.ts's ANIMATION_TIMELINE, just a third
-// place that needs the same manual sync now.
+// route to render frames without a browser (see server/export.ts). This is
+// the canonical animation dataset: scripts/generate-stars-css.ts generates
+// client/css/stars.css *from* this file, so edit here first, then run
+// `just generate-css` (or `bun run generate:css`) to regenerate the CSS —
+// `just check` runs the generator in --check mode and fails if the two
+// files disagree, so drift between them can't go unnoticed the way it did
+// before this generator existed.
 //
 // A control-point array only lists the CSS keyframe percentages where the
 // source actually specifies that property. Where stars.css omits a
@@ -11,17 +13,33 @@
 // only start at 50%, spacetwo_1's filter only starts at 60%), the browser
 // synthesizes an implicit "identity" value at the 0%/100% boundary and
 // interpolates from there — those synthetic points are written out
-// explicitly below (marked "implicit boundary") rather than left for a
-// runtime fallback, so every array already spans 0-100 and the
-// interpolator never needs special-case boundary logic.
+// explicitly below and marked `implicit: true`, so every array already
+// spans 0-100 and the interpolator never needs special-case boundary
+// logic. The generator reads the same flag to know NOT to emit that
+// property at that percentage, since it isn't actually in the source CSS.
 
-type ControlPoint = { percent: number; value: number };
+type ControlPoint = { percent: number; value: number; implicit?: true };
 
 type FilterKind = "none" | "saturate" | "contrast";
-type FilterControlPoint = { percent: number; kind: FilterKind; amount: number };
+type FilterControlPoint = {
+	percent: number;
+	kind: FilterKind;
+	amount: number;
+	implicit?: true;
+};
+
+// stars.css doesn't use one consistent order for the transform functions:
+// spaceone/dolphins-two write `translate() scale() rotate()`, while
+// spacetwo-*/microone/microtwo write `translate() rotate() scale()` — CSS
+// composes transform functions in written order (the rightmost function
+// applies to the point first), so these produce genuinely different
+// results and server/export.ts's canvas rendering must replicate whichever
+// order the source animation actually uses.
+type TransformOrder = "scale-rotate" | "rotate-scale";
 
 export type PictureAnimation = {
 	durationMs: number;
+	transformOrder: TransformOrder;
 	x: ControlPoint[];
 	y: ControlPoint[];
 	scaleX: ControlPoint[];
@@ -41,17 +59,53 @@ export type ResolvedFrame = {
 	filter: { kind: FilterKind; amount: number };
 };
 
-const pts = (...pairs: [number, number][]): ControlPoint[] =>
-	pairs.map(([percent, value]) => ({ percent, value }));
+const pts = (
+	...pairs: ([number, number] | [number, number, true])[]
+): ControlPoint[] =>
+	pairs.map(([percent, value, implicit]) =>
+		implicit ? { percent, value, implicit } : { percent, value },
+	);
 
 const filterPts = (
-	...pairs: [number, FilterKind, number][]
+	...pairs: (
+		| [number, FilterKind, number]
+		| [number, FilterKind, number, true]
+	)[]
 ): FilterControlPoint[] =>
-	pairs.map(([percent, kind, amount]) => ({ percent, kind, amount }));
+	pairs.map(([percent, kind, amount, implicit]) =>
+		implicit ? { percent, kind, amount, implicit } : { percent, kind, amount },
+	);
+
+// spaceone's single-argument `scale(n)` applies uniformly to both axes —
+// shared by scaleX and scaleY below rather than duplicated literally.
+const spaceoneScale: ControlPoint[] = pts(
+	[0, 2],
+	[5, 1.95],
+	[10, 1.9],
+	[15, 1.85],
+	[20, 1.8],
+	[25, 1.75],
+	[30, 1.7],
+	[35, 1.65],
+	[40, 1.6],
+	[45, 1.55],
+	[50, 1.5],
+	[55, 1.45],
+	[60, 1.4],
+	[65, 1.35],
+	[70, 1.3],
+	[75, 1.25],
+	[80, 1.2],
+	[85, 1.15],
+	[90, 1.1],
+	[95, 1.05],
+	[100, 1],
+);
 
 export const ANIMATIONS: Record<string, PictureAnimation> = {
 	spaceone_1: {
 		durationMs: 4200,
+		transformOrder: "scale-rotate",
 		x: pts(
 			[0, 1000],
 			[5, 975],
@@ -98,30 +152,8 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 			[95, -50],
 			[100, 0],
 		),
-		scaleX: pts(
-			[0, 2],
-			[5, 1.95],
-			[10, 1.9],
-			[15, 1.85],
-			[20, 1.8],
-			[25, 1.75],
-			[30, 1.7],
-			[35, 1.65],
-			[40, 1.6],
-			[45, 1.55],
-			[50, 1.5],
-			[55, 1.45],
-			[60, 1.4],
-			[65, 1.35],
-			[70, 1.3],
-			[75, 1.25],
-			[80, 1.2],
-			[85, 1.15],
-			[90, 1.1],
-			[95, 1.05],
-			[100, 1],
-		),
-		scaleY: [], // identity — no per-axis scale in spaceone (uniform scale() covers x/y the same)
+		scaleX: spaceoneScale,
+		scaleY: spaceoneScale,
 		rotateDeg: pts(
 			[0, -90],
 			[5, -94.5],
@@ -173,6 +205,11 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 
 	dolphins_1: {
 		durationMs: 4000,
+		// no scale in this animation at all, so scale/rotate order can't
+		// actually be observed — grouped with its rotate-scale sibling
+		// (dolphins_2 uses scale-rotate, so dolphins_1's own written order,
+		// translate/rotate only, doesn't collide with either)
+		transformOrder: "rotate-scale",
 		x: pts(
 			[0, 1000],
 			[10, 900],
@@ -220,6 +257,7 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 
 	dolphins_2: {
 		durationMs: 4000,
+		transformOrder: "scale-rotate",
 		x: pts(
 			[0, 1200],
 			[10, 960],
@@ -291,6 +329,7 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 
 	spacetwo_1: {
 		durationMs: 4000,
+		transformOrder: "rotate-scale",
 		x: pts(
 			[0, -1000],
 			[10, -800],
@@ -334,17 +373,18 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 		),
 		opacity: [],
 		filter: filterPts(
-			[0, "none", 1],
+			[0, "none", 1, true], // implicit boundary — filter only declared from 60%
 			[60, "contrast", 3],
 			[70, "contrast", 3],
 			[80, "contrast", 3],
 			[90, "contrast", 3],
 			[100, "contrast", 3],
-		), // implicit boundary at 0
+		),
 	},
 
 	spacetwo_2: {
 		durationMs: 4000,
+		transformOrder: "rotate-scale",
 		x: pts(
 			[0, 1000],
 			[10, 800],
@@ -388,39 +428,40 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 		),
 		opacity: [],
 		filter: filterPts(
-			[0, "none", 1],
+			[0, "none", 1, true], // implicit boundary — filter only declared from 50%
 			[50, "contrast", 3],
 			[60, "contrast", 3],
 			[70, "contrast", 3],
 			[80, "contrast", 3],
 			[90, "contrast", 3],
 			[100, "contrast", 3],
-		), // implicit boundary at 0
+		),
 	},
 
 	spacetwo_3: {
 		durationMs: 4000,
+		transformOrder: "rotate-scale",
 		x: pts(
-			[0, 0],
+			[0, 0, true], // implicit boundary — transform only declared from 50%
 			[50, 0],
 			[60, -200],
 			[70, -400],
 			[80, -600],
 			[90, -800],
 			[100, -1000],
-		), // implicit boundary at 0 (identity — invisible pre-50%)
-		y: pts([0, 0], [50, 0], [60, 0], [70, 0], [80, 0], [90, 0], [100, 0]),
+		),
+		y: pts([0, 0, true], [50, 0], [60, 0], [70, 0], [80, 0], [90, 0], [100, 0]),
 		scaleX: [],
 		scaleY: [],
 		rotateDeg: pts(
-			[0, 0],
+			[0, 0, true],
 			[50, -90],
 			[60, -70],
 			[70, -110],
 			[80, -70],
 			[90, -110],
 			[100, -90],
-		), // implicit boundary at 0
+		),
 		opacity: pts(
 			[0, 0],
 			[10, 0],
@@ -435,20 +476,21 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 			[100, 1],
 		),
 		filter: filterPts(
-			[0, "none", 1],
+			[0, "none", 1, true], // implicit boundary — filter only declared from 50%
 			[50, "contrast", 3],
 			[60, "contrast", 3],
 			[70, "contrast", 3],
 			[80, "contrast", 3],
 			[90, "contrast", 3],
 			[100, "contrast", 3],
-		), // implicit boundary at 0
+		),
 	},
 
 	spacetwo_4: {
 		durationMs: 4000,
+		transformOrder: "rotate-scale",
 		x: pts(
-			[0, 0],
+			[0, 0, true], // implicit boundary — transform only declared from 50%
 			[50, 0],
 			[60, 200],
 			[70, 400],
@@ -456,19 +498,19 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 			[90, 800],
 			[100, 1000],
 		),
-		y: pts([0, 0], [50, 0], [60, 0], [70, 0], [80, 0], [90, 0], [100, 0]),
+		y: pts([0, 0, true], [50, 0], [60, 0], [70, 0], [80, 0], [90, 0], [100, 0]),
 		scaleX: pts(
-			[0, 1],
+			[0, 1, true], // implicit boundary — scaleX(-1) flip starts at 50%
 			[50, -1],
 			[60, -1],
 			[70, -1],
 			[80, -1],
 			[90, -1],
 			[100, -1],
-		), // implicit boundary at 0 (scaleX(-1) flip starts at 50%)
+		),
 		scaleY: [],
 		rotateDeg: pts(
-			[0, 0],
+			[0, 0, true],
 			[50, 90],
 			[60, 70],
 			[70, 110],
@@ -490,7 +532,7 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 			[100, 1],
 		),
 		filter: filterPts(
-			[0, "none", 1],
+			[0, "none", 1, true],
 			[50, "contrast", 3],
 			[60, "contrast", 3],
 			[70, "contrast", 3],
@@ -502,8 +544,9 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 
 	spacetwo_5: {
 		durationMs: 4000,
+		transformOrder: "rotate-scale",
 		x: pts(
-			[0, 0],
+			[0, 0, true], // implicit boundary — transform only declared from 50%
 			[50, 0],
 			[60, -60],
 			[70, -120],
@@ -512,7 +555,7 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 			[100, -300],
 		),
 		y: pts(
-			[0, 0],
+			[0, 0, true],
 			[50, 0],
 			[60, 120],
 			[70, 240],
@@ -523,7 +566,7 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 		scaleX: [],
 		scaleY: [],
 		rotateDeg: pts(
-			[0, 0],
+			[0, 0, true],
 			[50, -140],
 			[60, -120],
 			[70, -160],
@@ -545,7 +588,7 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 			[100, 1],
 		),
 		filter: filterPts(
-			[0, "none", 1],
+			[0, "none", 1, true],
 			[50, "contrast", 3],
 			[60, "contrast", 3],
 			[70, "contrast", 3],
@@ -557,8 +600,9 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 
 	spacetwo_6: {
 		durationMs: 4000,
+		transformOrder: "rotate-scale",
 		x: pts(
-			[0, 0],
+			[0, 0, true], // implicit boundary — transform only declared from 50%
 			[50, 0],
 			[60, 240],
 			[70, 480],
@@ -567,7 +611,7 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 			[100, 1200],
 		),
 		y: pts(
-			[0, 0],
+			[0, 0, true],
 			[50, 0],
 			[60, 120],
 			[70, 240],
@@ -576,7 +620,7 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 			[100, 600],
 		),
 		scaleX: pts(
-			[0, 1],
+			[0, 1, true], // implicit boundary — scaleX(-1) flip starts at 50%
 			[50, -1],
 			[60, -1],
 			[70, -1],
@@ -586,7 +630,7 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 		),
 		scaleY: [],
 		rotateDeg: pts(
-			[0, 0],
+			[0, 0, true],
 			[50, 150],
 			[60, 170],
 			[70, 130],
@@ -608,7 +652,7 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 			[100, 1],
 		),
 		filter: filterPts(
-			[0, "none", 1],
+			[0, "none", 1, true],
 			[50, "contrast", 3],
 			[60, "contrast", 3],
 			[70, "contrast", 3],
@@ -620,6 +664,7 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 
 	microone_1: {
 		durationMs: 3500,
+		transformOrder: "rotate-scale",
 		x: pts([0, 0], [15, -300], [100, -50]),
 		y: pts([0, -200], [15, 150], [100, 0]),
 		scaleX: pts([0, -0.5], [15, -2.5], [100, -0.5]),
@@ -631,6 +676,7 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 
 	microtwo_1: {
 		durationMs: 5500,
+		transformOrder: "rotate-scale",
 		x: pts(
 			[0, -400],
 			[15, -600],

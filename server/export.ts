@@ -116,15 +116,26 @@ async function renderFrames(
 			// base position: img is centered in the viewport (base.css's
 			// inset:0 + margin:auto), then the individual `scale` CSS
 			// property (--travel-scale) applies, then the keyframe's own
-			// transform: translate() scale() rotate() — in that order, so
-			// travel-scale ends up multiplying the keyframe's translate
-			// distances too (confirmed against the comment in base.css:
-			// "scales the whole rendered transform down proportionally").
+			// transform applies on top — travel-scale ends up multiplying
+			// the keyframe's translate distances too (confirmed against the
+			// comment in base.css: "scales the whole rendered transform
+			// down proportionally").
 			ctx.translate(viewport.width / 2, viewport.height / 2);
 			ctx.scale(scale, scale);
 			ctx.translate(frame.x, frame.y);
-			ctx.scale(frame.scaleX, frame.scaleY);
-			ctx.rotate((frame.rotateDeg * Math.PI) / 180);
+			// stars.css doesn't use one consistent transform-function order
+			// across animations (see keyframes.ts's TransformOrder comment)
+			// — CSS composes functions in written order, so the ctx call
+			// order below must match each animation's own order, not a
+			// single hardcoded sequence.
+			const rotateRad = (frame.rotateDeg * Math.PI) / 180;
+			if (anim.transformOrder === "scale-rotate") {
+				ctx.scale(frame.scaleX, frame.scaleY);
+				ctx.rotate(rotateRad);
+			} else {
+				ctx.rotate(rotateRad);
+				ctx.scale(frame.scaleX, frame.scaleY);
+			}
 			ctx.filter = cssFilterString(frame.filter);
 			ctx.globalAlpha = frame.opacity;
 			ctx.drawImage(

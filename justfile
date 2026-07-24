@@ -41,6 +41,11 @@ format:
     @echo "Formatting..."
     {{ docker_compose }} --profile dev run --rm bun-dev bun run lint:fix
 
+# regenerate client/css/stars.css from server/keyframes.ts
+generate-css:
+    @echo "Generating stars.css..."
+    {{ docker_compose }} --profile dev run --rm bun-dev bun run generate:css
+
 # run the test suite (bun:test)
 test:
     @echo "Running tests..."
