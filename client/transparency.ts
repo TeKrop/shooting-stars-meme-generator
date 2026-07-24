@@ -30,6 +30,7 @@ function pickColorAt(
 ) {
 	const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
 	const maxDistance = (tolerance / 100) * 441.67; // sqrt(255^2 * 3)
+	const maxDistanceSquared = maxDistance * maxDistance;
 
 	const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 	const { data } = imageData;
@@ -37,7 +38,7 @@ function pickColorAt(
 		const dr = data[i] - r;
 		const dg = data[i + 1] - g;
 		const db = data[i + 2] - b;
-		if (Math.sqrt(dr * dr + dg * dg + db * db) <= maxDistance) {
+		if (dr * dr + dg * dg + db * db <= maxDistanceSquared) {
 			data[i + 3] = 0;
 		}
 	}
