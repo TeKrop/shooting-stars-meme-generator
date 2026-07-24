@@ -12,6 +12,7 @@ import {
 	type ExportFormat,
 	FRAME_RATES,
 	type FrameRate,
+	type Orientation,
 	RESOLUTIONS,
 	type Resolution,
 	renderExportInWorker,
@@ -144,6 +145,54 @@ const EXPORT_CONTENT_TYPE: Record<ExportFormat, string> = {
 	gif: "image/gif",
 };
 
+// generates a random upload hash, retrying on an on-disk name collision —
+// collision odds are ~1e-8 at default HASH_LENGTH (see MAX_HASH_ATTEMPTS
+// above), so a fixed small retry cap is enough
+async function generateUploadHash(): Promise<string> {
+	let hash = randomstring.generate(HASH_LENGTH);
+	for (let attempts = 0; attempts < MAX_HASH_ATTEMPTS; attempts++) {
+		const collides = await Bun.file(`${uploadsDir}/${hash}.png`).exists();
+		if (!collides) break;
+		hash = randomstring.generate(HASH_LENGTH);
+	}
+	return hash;
+}
+
+function parseExportOptions(searchParams: URLSearchParams): {
+	orientation: Orientation;
+	format: ExportFormat;
+	resolution: Resolution;
+	fps: FrameRate;
+} {
+	const orientation =
+		searchParams.get("orientation") === "portrait" ? "portrait" : "landscape";
+
+	const rawFormat = searchParams.get("format");
+	const format: ExportFormat = EXPORT_FORMATS.includes(
+		rawFormat as ExportFormat,
+	)
+		? (rawFormat as ExportFormat)
+		: DEFAULT_FORMAT;
+
+	const rawResolution = searchParams.get("resolution");
+	let resolution: Resolution = RESOLUTIONS.includes(rawResolution as Resolution)
+		? (rawResolution as Resolution)
+		: DEFAULT_RESOLUTION;
+
+	const rawFps = Number(searchParams.get("fps"));
+	let fps: FrameRate = FRAME_RATES.includes(rawFps as FrameRate)
+		? (rawFps as FrameRate)
+		: DEFAULT_FPS;
+
+	// enforced server-side too, not just via the client's disabled buttons —
+	// a direct request could otherwise bypass the cap
+	if (format === "gif") {
+		({ resolution, fps } = clampForGif(resolution, fps));
+	}
+
+	return { orientation, format, resolution, fps };
+}
+
 const server = Bun.serve({
 	port: HTTP_PORT,
 	// Bun's default is 10s — too short for '/export/*'. No response bytes
@@ -192,16 +241,8 @@ const server = Bun.serve({
 					);
 				}
 
-				let hash = randomstring.generate(HASH_LENGTH);
-				let storedName = `${hash}.png`;
-				for (let attempts = 0; attempts < MAX_HASH_ATTEMPTS; attempts++) {
-					const collides = await Bun.file(
-						`${uploadsDir}/${storedName}`,
-					).exists();
-					if (!collides) break;
-					hash = randomstring.generate(HASH_LENGTH);
-					storedName = `${hash}.png`;
-				}
+				const hash = await generateUploadHash();
+				const storedName = `${hash}.png`;
 				await Bun.write(`${uploadsDir}/${storedName}`, file);
 				log("upload OK:", storedName, file.type, `${file.size} bytes`);
 				return withSecurityHeaders(Response.redirect(`/${hash}`, 303));
@@ -251,35 +292,9 @@ const server = Bun.serve({
 				);
 			}
 
-			const orientation =
-				url.searchParams.get("orientation") === "portrait"
-					? "portrait"
-					: "landscape";
-
-			const rawFormat = url.searchParams.get("format");
-			const format: ExportFormat = EXPORT_FORMATS.includes(
-				rawFormat as ExportFormat,
-			)
-				? (rawFormat as ExportFormat)
-				: DEFAULT_FORMAT;
-
-			const rawResolution = url.searchParams.get("resolution");
-			let resolution: Resolution = RESOLUTIONS.includes(
-				rawResolution as Resolution,
-			)
-				? (rawResolution as Resolution)
-				: DEFAULT_RESOLUTION;
-
-			const rawFps = Number(url.searchParams.get("fps"));
-			let fps: FrameRate = FRAME_RATES.includes(rawFps as FrameRate)
-				? (rawFps as FrameRate)
-				: DEFAULT_FPS;
-
-			// enforced server-side too, not just via the client's disabled
-			// buttons — a direct request could otherwise bypass the cap
-			if (format === "gif") {
-				({ resolution, fps } = clampForGif(resolution, fps));
-			}
+			const { orientation, format, resolution, fps } = parseExportOptions(
+				url.searchParams,
+			);
 
 			exportInProgress = true;
 			exportProgress = 0;

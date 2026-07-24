@@ -4,6 +4,47 @@ type Tool = "erase" | "pick";
 
 const MAX_HISTORY = 20;
 
+// draws one erase dab (destination-out) into ctx at (x, y) with the given radius
+function eraseAt(
+	ctx: CanvasRenderingContext2D,
+	x: number,
+	y: number,
+	radius: number,
+) {
+	ctx.save();
+	ctx.globalCompositeOperation = "destination-out";
+	ctx.beginPath();
+	ctx.arc(x, y, radius, 0, Math.PI * 2);
+	ctx.fill();
+	ctx.restore();
+}
+
+// makes every pixel within `tolerance` color-distance of (x, y) transparent
+// (simple Euclidean RGB distance, no edge feathering)
+function pickColorAt(
+	ctx: CanvasRenderingContext2D,
+	canvas: HTMLCanvasElement,
+	x: number,
+	y: number,
+	tolerance: number,
+) {
+	const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
+	const maxDistance = (tolerance / 100) * 441.67; // sqrt(255^2 * 3)
+	const maxDistanceSquared = maxDistance * maxDistance;
+
+	const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	const { data } = imageData;
+	for (let i = 0; i < data.length; i += 4) {
+		const dr = data[i] - r;
+		const dg = data[i + 1] - g;
+		const db = data[i + 2] - b;
+		if (dr * dr + dg * dg + db * db <= maxDistanceSquared) {
+			data[i + 3] = 0;
+		}
+	}
+	ctx.putImageData(imageData, 0, 0);
+}
+
 export function initTransparencyTools(canvas: HTMLCanvasElement) {
 	const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
@@ -127,35 +168,6 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 		};
 	}
 
-	function eraseAt(x: number, y: number) {
-		const radius = Number(eraseSizeInput.value);
-		ctx.save();
-		ctx.globalCompositeOperation = "destination-out";
-		ctx.beginPath();
-		ctx.arc(x, y, radius, 0, Math.PI * 2);
-		ctx.fill();
-		ctx.restore();
-	}
-
-	// makes every pixel within `tolerance` color-distance of the clicked pixel
-	// transparent (simple Euclidean RGB distance, no edge feathering)
-	function pickColorAt(x: number, y: number) {
-		const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
-		const maxDistance = (Number(pickToleranceInput.value) / 100) * 441.67; // sqrt(255^2 * 3)
-
-		const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-		const { data } = imageData;
-		for (let i = 0; i < data.length; i += 4) {
-			const dr = data[i] - r;
-			const dg = data[i + 1] - g;
-			const db = data[i + 2] - b;
-			if (Math.sqrt(dr * dr + dg * dg + db * db) <= maxDistance) {
-				data[i + 3] = 0;
-			}
-		}
-		ctx.putImageData(imageData, 0, 0);
-	}
-
 	canvas.onpointerdown = (e: PointerEvent) => {
 		// computed once for the whole stroke, not per move — see canvasPoint
 		const rect = contentRect();
@@ -163,11 +175,17 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 		pushHistory();
 
 		if (tool === "pick") {
-			pickColorAt(point.x, point.y);
+			pickColorAt(
+				ctx,
+				canvas,
+				point.x,
+				point.y,
+				Number(pickToleranceInput.value),
+			);
 			return;
 		}
 
-		eraseAt(point.x, point.y);
+		eraseAt(ctx, point.x, point.y, Number(eraseSizeInput.value));
 		canvas.setPointerCapture(e.pointerId);
 
 		// touch pointermove can fire faster than the display refreshes;
@@ -180,7 +198,14 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 			rafScheduled = true;
 			requestAnimationFrame(() => {
 				rafScheduled = false;
-				if (pendingPoint) eraseAt(pendingPoint.x, pendingPoint.y);
+				if (pendingPoint) {
+					eraseAt(
+						ctx,
+						pendingPoint.x,
+						pendingPoint.y,
+						Number(eraseSizeInput.value),
+					);
+				}
 			});
 		};
 		// 'lostpointercapture' — rather than 'pointerup' alone — is what

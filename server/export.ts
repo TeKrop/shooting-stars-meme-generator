@@ -137,9 +137,7 @@ async function renderFrames(
 	const canvas = createCanvas(viewport.width, viewport.height);
 	const ctx = canvas.getContext("2d");
 
-	const totalFrames = Math.ceil((EXPORT_DURATION_MS / 1000) * fps);
-	for (let n = 0; n < totalFrames; n++) {
-		const frameTimeMs = (n * 1000) / fps;
+	function drawFrame(frameTimeMs: number) {
 		const stage = findStage(frameTimeMs);
 		const elapsed = frameTimeMs - stage.startMs;
 
@@ -187,6 +185,12 @@ async function renderFrames(
 			);
 			ctx.restore();
 		}
+	}
+
+	const totalFrames = Math.ceil((EXPORT_DURATION_MS / 1000) * fps);
+	for (let n = 0; n < totalFrames; n++) {
+		const frameTimeMs = (n * 1000) / fps;
+		drawFrame(frameTimeMs);
 
 		await onFrame(canvas.data());
 		// frames are piped into ffmpeg as they're generated (not rendered
@@ -247,18 +251,41 @@ const ENCODE_ARGS: Record<"mp4" | "webm", string[]> = {
 	],
 };
 
-export async function renderExport(
-	imagePath: string,
-	orientation: Orientation,
-	resolution: Resolution,
+type FfmpegFilterStep = {
+	filter: string;
+	args?: Record<string, string | number>;
+};
+
+type FfmpegFilterChain = {
+	inputs?: string[];
+	steps: FfmpegFilterStep[];
+	outputs?: string[];
+};
+
+function renderFilterChain(chain: FfmpegFilterChain): string {
+	const inputs = (chain.inputs ?? []).map((label) => `[${label}]`).join("");
+	const outputs = (chain.outputs ?? []).map((label) => `[${label}]`).join("");
+	const steps = chain.steps
+		.map(({ filter, args }) => {
+			if (!args || Object.keys(args).length === 0) return filter;
+			const params = Object.entries(args)
+				.map(([key, value]) => `${key}=${value}`)
+				.join(":");
+			return `${filter}=${params}`;
+		})
+		.join(",");
+	return `${inputs}${steps}${outputs}`;
+}
+
+function renderFilterComplex(chains: FfmpegFilterChain[]): string {
+	return chains.map(renderFilterChain).join(";");
+}
+
+function buildFilterComplex(
+	viewport: { width: number; height: number },
 	fps: FrameRate,
 	format: ExportFormat,
-	dir: string,
-	onProgress?: (percent: number) => void,
-): Promise<string> {
-	const viewport = VIEWPORTS[orientation][resolution];
-	const outPath = join(dir, `export.${format}`);
-
+): string {
 	// cover-crops the source background.mp4 (1280x720) down/up to the
 	// export's viewport — for portrait this also reshapes the aspect ratio,
 	// matching the CSS `min-width/min-height: 100%` "cover" sizing the
@@ -273,7 +300,29 @@ export async function renderExport(
 	// repeated 331 times, at 60fps before this fix) — the picture motion
 	// itself needs the *main* input resampled to the target rate so overlay
 	// actually consumes a distinct overlay frame every output frame.
-	const bgFilter = `scale=${viewport.width}:${viewport.height}:force_original_aspect_ratio=increase,crop=${viewport.width}:${viewport.height},fps=${fps}`;
+	const bg: FfmpegFilterChain = {
+		inputs: ["0:v"],
+		steps: [
+			{
+				filter: "scale",
+				args: {
+					w: viewport.width,
+					h: viewport.height,
+					force_original_aspect_ratio: "increase",
+				},
+			},
+			{ filter: "crop", args: { w: viewport.width, h: viewport.height } },
+			{ filter: "fps", args: { fps } },
+		],
+		outputs: ["bg"],
+	};
+	const overlay: FfmpegFilterChain = {
+		inputs: ["bg", "1:v"],
+		steps: [{ filter: "overlay", args: { shortest: 1 } }],
+		outputs: ["comp"],
+	};
+
+	if (format !== "gif") return renderFilterComplex([bg, overlay]);
 
 	// GIF has no audio track and needs a palette pass for reasonable
 	// quality (ffmpeg's default GIF encoder without one looks banded/dithered
@@ -293,10 +342,34 @@ export async function renderExport(
 	// user asked for real 360p/480p GIF output instead, so full resolution
 	// is used at whatever tier is selected and the client warns with a real
 	// size estimate up front instead of the server quietly shrinking it.
-	const filterComplex =
-		format === "gif"
-			? `[0:v]${bgFilter}[bg];[bg][1:v]overlay=shortest=1[comp];[comp]split[a][b];[a]palettegen[pal];[b][pal]paletteuse=dither=bayer:bayer_scale=5[out]`
-			: `[0:v]${bgFilter}[bg];[bg][1:v]overlay=shortest=1[comp]`;
+	return renderFilterComplex([
+		bg,
+		overlay,
+		{ inputs: ["comp"], steps: [{ filter: "split" }], outputs: ["a", "b"] },
+		{ inputs: ["a"], steps: [{ filter: "palettegen" }], outputs: ["pal"] },
+		{
+			inputs: ["b", "pal"],
+			steps: [
+				{ filter: "paletteuse", args: { dither: "bayer", bayer_scale: 5 } },
+			],
+			outputs: ["out"],
+		},
+	]);
+}
+
+export async function renderExport(
+	imagePath: string,
+	orientation: Orientation,
+	resolution: Resolution,
+	fps: FrameRate,
+	format: ExportFormat,
+	dir: string,
+	onProgress?: (percent: number) => void,
+): Promise<string> {
+	const viewport = VIEWPORTS[orientation][resolution];
+	const outPath = join(dir, `export.${format}`);
+
+	const filterComplex = buildFilterComplex(viewport, fps, format);
 
 	const mapArgs =
 		format === "gif" ? ["-map", "[out]"] : ["-map", "[comp]", "-map", "0:a?"];
