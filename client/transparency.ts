@@ -113,8 +113,14 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 	eraseBtn.onclick = () => setTool("erase");
 	pickBtn.onclick = () => setTool("pick");
 
-	function canvasPoint(e: PointerEvent): { x: number; y: number } {
-		const rect = contentRect();
+	// rect is passed in (rather than calling contentRect() here) so a drag
+	// can compute it once at pointerdown and reuse it for every pointermove —
+	// getBoundingClientRect() can force a layout reflow, too costly to pay
+	// on every move event of a hot drag loop
+	function canvasPoint(
+		e: PointerEvent,
+		rect: ReturnType<typeof contentRect>,
+	): { x: number; y: number } {
 		return {
 			x: ((e.clientX - rect.left) * canvas.width) / rect.width,
 			y: ((e.clientY - rect.top) * canvas.height) / rect.height,
@@ -151,7 +157,9 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 	}
 
 	canvas.onpointerdown = (e: PointerEvent) => {
-		const point = canvasPoint(e);
+		// computed once for the whole stroke, not per move — see canvasPoint
+		const rect = contentRect();
+		const point = canvasPoint(e, rect);
 		pushHistory();
 
 		if (tool === "pick") {
@@ -167,7 +175,7 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 		let pendingPoint: { x: number; y: number } | null = null;
 		let rafScheduled = false;
 		const onMove = (moveEvent: PointerEvent) => {
-			pendingPoint = canvasPoint(moveEvent);
+			pendingPoint = canvasPoint(moveEvent, rect);
 			if (rafScheduled) return;
 			rafScheduled = true;
 			requestAnimationFrame(() => {
