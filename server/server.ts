@@ -32,23 +32,6 @@ const uploadsDir = `${import.meta.dir}/../uploads`;
 // renders at the resolution of the source image, not at the crop zone size.
 const MAX_UPLOAD_SIZE = 15 * 1024 * 1024;
 
-// Extension for the stored file, so Bun can infer the Content-Type on
-// serve. The public hash stays bare. See resolveUpload below. New uploads
-// are PNG only. The other entries keep older uploads readable.
-const EXTENSION_BY_MIME: Record<string, string> = {
-	"image/png": "png",
-	"image/jpeg": "jpg",
-	"image/gif": "gif",
-	"image/webp": "webp",
-	"image/svg+xml": "svg",
-	"image/bmp": "bmp",
-	"image/avif": "avif",
-	"image/x-icon": "ico",
-	"image/tiff": "tiff",
-	"image/heic": "heic",
-	"image/heif": "heif",
-};
-
 function log(...args: unknown[]) {
 	console.log(`[${new Date().toISOString()}]`, ...args);
 }
@@ -83,35 +66,15 @@ function serveFrom(dir: string, prefix: string) {
 	};
 }
 
-// Uploads sit on disk as `<hash>.<ext>` but are served from the bare hash.
-// This loop stats a fixed set of names, so it stays O(1).
-// Check `HASH_PATTERN` first: an unchecked hash could escape `uploadsDir`.
+// The uploads sit on disk as `<hash>.png`. See '/upload' below. The server
+// serves them from the bare hash, so this function finds the real name.
+// Check `HASH_PATTERN` first. An unchecked hash could escape `uploadsDir`.
 const HASH_PATTERN = /^[a-zA-Z0-9]+$/;
-const KNOWN_EXTENSIONS = Object.values(EXTENSION_BY_MIME);
-const KNOWN_SUFFIXES = ["", ...KNOWN_EXTENSIONS.map((ext) => `.${ext}`)];
 
 async function resolveUpload(hash: string): Promise<string | undefined> {
 	if (!HASH_PATTERN.test(hash)) return undefined;
-	for (const suffix of KNOWN_SUFFIXES) {
-		const path = `${uploadsDir}/${hash}${suffix}`;
-		if (await Bun.file(path).exists()) return path;
-	}
-	return undefined;
-}
-
-// Older uploads have no extension, so Bun cannot infer their Content-Type.
-// Only SVG needs the header; a browser sniffs raster formats itself. This
-// runs for bare files only, a fixed and shrinking set.
-const SVG_ROOT_TAG = /<svg[\s>]/i;
-
-async function sniffLegacyContentType(
-	file: ReturnType<typeof Bun.file>,
-): Promise<string | undefined> {
-	const head = await file
-		.slice(0, 1024)
-		.text()
-		.catch(() => "");
-	return SVG_ROOT_TAG.test(head) ? "image/svg+xml" : undefined;
+	const path = `${uploadsDir}/${hash}.png`;
+	return (await Bun.file(path).exists()) ? path : undefined;
 }
 
 const dogePath = `${import.meta.dir}/../client/public/img/doge.png`;
@@ -262,12 +225,7 @@ const server = Bun.serve({
 				return withSecurityHeaders(new Response("Not Found", { status: 404 }));
 			}
 
-			const file = Bun.file(path);
-			const response = new Response(file);
-			if (path === `${uploadsDir}/${hash}`) {
-				const sniffed = await sniffLegacyContentType(file);
-				if (sniffed) response.headers.set("Content-Type", sniffed);
-			}
+			const response = new Response(Bun.file(path));
 			return withSecurityHeaders(response);
 		},
 		// script.ts names this path at runtime, as a plain string. The HTML
