@@ -105,7 +105,6 @@
 		dialog#export-options-dialog,
 		dialog#export-progress-dialog {
 			width: min(94vw, 360px);
-			max-width: 94vw;
 		}
 
 		.export-options-card,
@@ -116,13 +115,13 @@
 			box-sizing: border-box;
 		}
 
-		.option-row {
+		.export-options-card .option-row {
 			flex-direction: column;
 			align-items: stretch;
 			gap: 8px;
 		}
 
-		.tool-picker {
+		.export-options-card .tool-picker {
 			flex-wrap: wrap;
 		}
 	}
