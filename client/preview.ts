@@ -163,6 +163,9 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 
 	function openSourceStep() {
 		setStep("source");
+		// a previous upload in this same dialog session may have left this
+		// disabled — reset it so a fresh upload isn't stuck uncancelable
+		cancelBtn.disabled = false;
 		previewDialog.showModal();
 	}
 
