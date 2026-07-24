@@ -8,6 +8,7 @@
 // browser to wait on, just compositing + a fast software encode.
 
 import { join } from "node:path";
+import { Worker } from "node:worker_threads";
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { ANIMATION_TIMELINE } from "../client/animation-timeline";
 import { ANIMATIONS, resolvePictureFrame } from "./keyframes";
@@ -255,4 +256,49 @@ export async function renderExport(
 	);
 
 	return outPath;
+}
+
+export type ExportJob = {
+	imagePath: string;
+	orientation: Orientation;
+	format: ExportFormat;
+	dir: string;
+};
+
+type WorkerMessage =
+	| { type: "progress"; percent: number }
+	| { type: "done"; outputPath: string }
+	| { type: "error"; message: string };
+
+// runs renderExport() on a separate OS thread (server/export-worker.ts)
+// instead of directly on Bun.serve's own thread. @napi-rs/canvas's per-frame
+// drawing is synchronous native CPU work — the ffmpeg subprocess was already
+// off-thread via Bun.spawn, but without this, the *canvas* half of a render
+// would still block the server from handling any other request (page loads,
+// uploads, other exports' progress polls) for the whole render duration.
+export function renderExportInWorker(
+	job: ExportJob,
+	onProgress?: (percent: number) => void,
+): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const worker = new Worker(`${import.meta.dir}/export-worker.ts`, {
+			workerData: job,
+		});
+
+		// export-worker.ts has nothing left to do once it posts "done"/
+		// "error", so its own script simply runs to completion and the
+		// thread exits on its own — forcibly worker.terminate()-ing it from
+		// here raced that natural exit and left Bun warning "ObjectRef is
+		// not unref" on every export
+		worker.on("message", (msg: WorkerMessage) => {
+			if (msg.type === "progress") {
+				onProgress?.(msg.percent);
+			} else if (msg.type === "done") {
+				resolve(msg.outputPath);
+			} else {
+				reject(new Error(msg.message));
+			}
+		});
+		worker.on("error", reject);
+	});
 }

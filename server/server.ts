@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import randomstring from "randomstring";
 import index from "../client/index.html";
-import { type ExportFormat, renderExport } from "./export";
+import { type ExportFormat, renderExportInWorker } from "./export";
 
 // Fixed on purpose: the app always listens on 9595 inside the container (or
 // on the host, if run directly with `bun server/server.ts`). Only the Docker
@@ -231,11 +231,8 @@ const server = Bun.serve({
 			exportProgress = 0;
 			const dir = await mkdtemp(join(tmpdir(), "shooting-stars-export-"));
 			try {
-				const outputPath = await renderExport(
-					imagePath,
-					orientation,
-					format,
-					dir,
+				const outputPath = await renderExportInWorker(
+					{ imagePath, orientation, format, dir },
 					(percent) => {
 						exportProgress = percent;
 					},
