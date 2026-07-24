@@ -1,7 +1,7 @@
 // the shooting-stars choreography engine: launch prompt + the timed
 // picture/video sequence itself
 
-import { ANIMATION_TIMELINE } from "./animation-timeline";
+import { ANIMATION_TIMELINE, pictureAnimationKey } from "./animation-timeline";
 
 const video = document.getElementById("video") as HTMLVideoElement;
 // set video volume to 5%
@@ -152,7 +152,10 @@ function scheduleTimeline() {
 				if (
 					ANIMATION_TIMELINE[Number(time)].pictures.indexOf(pictures[i]) > -1
 				) {
-					img.className = `${ANIMATION_TIMELINE[Number(time)].class}_${i + 1}`;
+					img.className = pictureAnimationKey(
+						ANIMATION_TIMELINE[Number(time)].class,
+						i,
+					);
 				} else {
 					// else, hide the picture
 					img.className = "hide";
