@@ -261,6 +261,58 @@ describe("GET /export/*", () => {
 		expect(res.headers.get("Content-Type")).toBe("video/mp4");
 	}, 30_000);
 
+	test("defaults to 480p/24fps for unrecognized resolution/fps values", async () => {
+		const res = await fetch(
+			new URL(
+				"/export/?resolution=not-a-real-resolution&fps=not-a-real-fps",
+				server.url,
+			),
+		);
+		expect(res.status).toBe(200);
+		expect(res.headers.get("Content-Type")).toBe("video/mp4");
+	}, 30_000);
+
+	// a smaller-than-default tier (rather than one of the larger/slower ones)
+	// is enough to prove the resolution param is actually threaded through
+	test("renders at a non-default resolution tier", async () => {
+		const res = await fetch(new URL("/export/?resolution=360p", server.url));
+		expect(res.status).toBe(200);
+		const bytes = await res.arrayBuffer();
+		expect(bytes.byteLength).toBeGreaterThan(1000);
+	}, 30_000);
+
+	// GIF needs an extra palettegen/paletteuse filter pass (see
+	// server/export.ts) on top of the same compositing work the video
+	// formats do, so it's the slowest of the three — generous timeout
+	test("renders the default doge animation as a real GIF export", async () => {
+		const res = await fetch(
+			new URL("/export/?orientation=landscape&format=gif", server.url),
+		);
+		expect(res.status).toBe(200);
+		expect(res.headers.get("Content-Type")).toBe("image/gif");
+		expect(res.headers.get("Content-Disposition")).toBe(
+			'attachment; filename="doge.gif"',
+		);
+		const bytes = await res.arrayBuffer();
+		expect(bytes.byteLength).toBeGreaterThan(1000);
+	}, 60_000);
+
+	// GIF at high resolution/framerate was measured at ~146s/~324MB at the
+	// old (now-removed) 1080p/60fps tier vs ~20s/~6MB as WebM at the same
+	// settings — clampForGif() in server/export.ts silently downgrades a GIF
+	// request above 360p/24fps rather than rendering it as requested, so a
+	// request that asks for 720p/60fps GIF (the current max tier) should
+	// still come back quickly, not hang for over a minute
+	test("clamps GIF resolution/fps down from an oversized request", async () => {
+		const start = Date.now();
+		const res = await fetch(
+			new URL("/export/?resolution=720p&fps=60&format=gif", server.url),
+		);
+		expect(res.status).toBe(200);
+		expect(res.headers.get("Content-Type")).toBe("image/gif");
+		expect(Date.now() - start).toBeLessThan(60_000);
+	}, 60_000);
+
 	// covers the hash-based naming path (the "doge" case above only covers
 	// the no-hash fallback) — same filename-building code regardless of
 	// format, so one format is enough to guard against a regression back to

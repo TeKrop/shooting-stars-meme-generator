@@ -8,12 +8,15 @@ import { parentPort, workerData } from "node:worker_threads";
 import type { ExportJob } from "./export";
 import { renderExport } from "./export";
 
-const { imagePath, orientation, format, dir } = workerData as ExportJob;
+const { imagePath, orientation, resolution, fps, format, dir } =
+	workerData as ExportJob;
 
 try {
 	const outputPath = await renderExport(
 		imagePath,
 		orientation,
+		resolution,
+		fps,
 		format,
 		dir,
 		(percent) => {

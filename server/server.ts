@@ -3,7 +3,19 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import randomstring from "randomstring";
 import index from "../client/index.html";
-import { type ExportFormat, renderExportInWorker } from "./export";
+import {
+	clampForGif,
+	DEFAULT_FORMAT,
+	DEFAULT_FPS,
+	DEFAULT_RESOLUTION,
+	EXPORT_FORMATS,
+	type ExportFormat,
+	FRAME_RATES,
+	type FrameRate,
+	RESOLUTIONS,
+	type Resolution,
+	renderExportInWorker,
+} from "./export";
 
 // Fixed on purpose: the app always listens on 9595 inside the container (or
 // on the host, if run directly with `bun server/server.ts`). Only the Docker
@@ -129,6 +141,7 @@ let exportProgress = 0;
 const EXPORT_CONTENT_TYPE: Record<ExportFormat, string> = {
 	mp4: "video/mp4",
 	webm: "video/webm",
+	gif: "image/gif",
 };
 
 const server = Bun.serve({
@@ -136,9 +149,16 @@ const server = Bun.serve({
 	// Bun's default is 10s — too short for '/export/*'. No response bytes
 	// are written until the whole render finishes (a single Response at the
 	// end, not streamed), so the entire render duration counts against this
-	// timeout. Renders have been observed to take ~3-5s under normal load;
-	// generous margin here for slower/busier hosts.
-	idleTimeout: 30,
+	// timeout. Resolution/framerate/format are now configurable, capped at
+	// 720p (background.mp4's own native resolution — no point exporting
+	// larger); measured worst case at 1920x1080@60fps (before that tier was
+	// removed) was ~13s as MP4, ~20s as WebM, so 720p is safely under that.
+	// GIF is separately capped to 360p/24fps (see clampForGif in
+	// server/export.ts — uncapped GIF at 1080p/60fps was measured at ~146s,
+	// dangerously close to a timeout and disproportionate to every other
+	// combination) and was measured at ~16.5s at that cap. 60 leaves several
+	// times margin over every real worst case observed.
+	idleTimeout: 60,
 	routes: {
 		"/": index,
 
@@ -233,15 +253,38 @@ const server = Bun.serve({
 				url.searchParams.get("orientation") === "portrait"
 					? "portrait"
 					: "landscape";
-			const format: ExportFormat =
-				url.searchParams.get("format") === "webm" ? "webm" : "mp4";
+
+			const rawFormat = url.searchParams.get("format");
+			const format: ExportFormat = EXPORT_FORMATS.includes(
+				rawFormat as ExportFormat,
+			)
+				? (rawFormat as ExportFormat)
+				: DEFAULT_FORMAT;
+
+			const rawResolution = url.searchParams.get("resolution");
+			let resolution: Resolution = RESOLUTIONS.includes(
+				rawResolution as Resolution,
+			)
+				? (rawResolution as Resolution)
+				: DEFAULT_RESOLUTION;
+
+			const rawFps = Number(url.searchParams.get("fps"));
+			let fps: FrameRate = FRAME_RATES.includes(rawFps as FrameRate)
+				? (rawFps as FrameRate)
+				: DEFAULT_FPS;
+
+			// enforced server-side too, not just via the client's disabled
+			// buttons — a direct request could otherwise bypass the cap
+			if (format === "gif") {
+				({ resolution, fps } = clampForGif(resolution, fps));
+			}
 
 			exportInProgress = true;
 			exportProgress = 0;
 			const dir = await mkdtemp(join(tmpdir(), "shooting-stars-export-"));
 			try {
 				const outputPath = await renderExportInWorker(
-					{ imagePath, orientation, format, dir },
+					{ imagePath, orientation, resolution, fps, format, dir },
 					(percent) => {
 						exportProgress = percent;
 					},
@@ -251,6 +294,8 @@ const server = Bun.serve({
 					"export OK:",
 					hash || "(default)",
 					orientation,
+					resolution,
+					`${fps}fps`,
 					format,
 					`${bytes.byteLength} bytes`,
 				);

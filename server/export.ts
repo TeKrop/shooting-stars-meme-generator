@@ -17,14 +17,67 @@ import {
 import { ANIMATIONS, resolvePictureFrame } from "./keyframes";
 
 export type Orientation = "landscape" | "portrait";
-export type ExportFormat = "mp4" | "webm";
+// 720p is the max tier: background.mp4 itself is authored at 1280x720, so a
+// 1080p export would just be upscaling the background for no real gain
+export type Resolution = "360p" | "480p" | "720p";
+export type FrameRate = 15 | 24 | 60;
+export type ExportFormat = "mp4" | "webm" | "gif";
 
-// 480p — smaller than the source background.mp4 (1280x720), traded for
-// faster encodes; bgFilter below scales the source down to match regardless
-// of orientation, not just when cropping portrait
-const VIEWPORTS: Record<Orientation, { width: number; height: number }> = {
-	landscape: { width: 854, height: 480 },
-	portrait: { width: 480, height: 854 },
+export const ORIENTATIONS: Orientation[] = ["landscape", "portrait"];
+export const RESOLUTIONS: Resolution[] = ["360p", "480p", "720p"];
+export const FRAME_RATES: FrameRate[] = [15, 24, 60];
+export const EXPORT_FORMATS: ExportFormat[] = ["mp4", "webm", "gif"];
+
+export const DEFAULT_ORIENTATION: Orientation = "landscape";
+export const DEFAULT_RESOLUTION: Resolution = "480p";
+export const DEFAULT_FPS: FrameRate = 24;
+export const DEFAULT_FORMAT: ExportFormat = "mp4";
+
+// GIF's palette-generation pass plus GIF's inherently poor compression for
+// video-like content make high resolution/framerate impractically slow and
+// huge: measured at ~146s/~324MB for 1080p/60fps, vs ~20s/~6MB for the same
+// settings as WebM. Clamping GIF down keeps one format from blowing the
+// render-time budget every other export relies on. 360p/24fps was measured
+// at ~16.5s/~39MB — still the biggest file of any capped combination, but
+// comfortably within the render-time budget.
+export const GIF_MAX_RESOLUTION: Resolution = "360p";
+export const GIF_MAX_FPS: FrameRate = 24;
+
+const RESOLUTION_ORDER: Resolution[] = ["360p", "480p", "720p"];
+
+export function clampForGif(
+	resolution: Resolution,
+	fps: FrameRate,
+): { resolution: Resolution; fps: FrameRate } {
+	return {
+		resolution:
+			RESOLUTION_ORDER.indexOf(resolution) >
+			RESOLUTION_ORDER.indexOf(GIF_MAX_RESOLUTION)
+				? GIF_MAX_RESOLUTION
+				: resolution,
+		fps: fps > GIF_MAX_FPS ? GIF_MAX_FPS : fps,
+	};
+}
+
+// 480p is the original/default tier — kept unchanged from before resolution
+// was configurable, for continuity with any bookmarked/shared export
+// behavior. Every tier matches the export viewport's own aspect ratio
+// (16:9 landscape / 9:16 portrait); bgFilter below always scales+crops the
+// background down/up to match, regardless of orientation or tier.
+const VIEWPORTS: Record<
+	Orientation,
+	Record<Resolution, { width: number; height: number }>
+> = {
+	landscape: {
+		"360p": { width: 640, height: 360 },
+		"480p": { width: 854, height: 480 },
+		"720p": { width: 1280, height: 720 },
+	},
+	portrait: {
+		"360p": { width: 360, height: 640 },
+		"480p": { width: 480, height: 854 },
+		"720p": { width: 720, height: 1280 },
+	},
 };
 
 // matches base.css's `--travel-scale: clamp(0.25, calc(100vw / 1400px), 1)`
@@ -46,8 +99,6 @@ function pictureBox(
 		height: (viewport.height * 0.3) / scale,
 	};
 }
-
-const FPS = 24;
 
 // the last ANIMATION_TIMELINE offset is the loop point (stage swaps back
 // to "init", matching the background video's own length / 'ended' event)
@@ -73,6 +124,10 @@ function findStage(timeMs: number) {
 	return active;
 }
 
+// leaves room for ffmpeg's own post-last-frame encoding work (see the
+// onProgress call in renderFrames below) before jumping to a real 100%
+const FRAME_PROGRESS_CAP = 95;
+
 function cssFilterString(filter: {
 	kind: "none" | "saturate" | "contrast";
 	amount: number;
@@ -84,10 +139,12 @@ function cssFilterString(filter: {
 async function renderFrames(
 	imagePath: string,
 	orientation: Orientation,
+	resolution: Resolution,
+	fps: FrameRate,
 	onFrame: (buffer: Buffer) => Promise<void> | void,
 	onProgress?: (percent: number) => void,
 ): Promise<void> {
-	const viewport = VIEWPORTS[orientation];
+	const viewport = VIEWPORTS[orientation][resolution];
 	const scale = travelScale(viewport.width);
 	const box = pictureBox(viewport, scale);
 
@@ -103,9 +160,9 @@ async function renderFrames(
 	const canvas = createCanvas(viewport.width, viewport.height);
 	const ctx = canvas.getContext("2d");
 
-	const totalFrames = Math.ceil((EXPORT_DURATION_MS / 1000) * FPS);
+	const totalFrames = Math.ceil((EXPORT_DURATION_MS / 1000) * fps);
 	for (let n = 0; n < totalFrames; n++) {
-		const frameTimeMs = (n * 1000) / FPS;
+		const frameTimeMs = (n * 1000) / fps;
 		const stage = findStage(frameTimeMs);
 		const elapsed = frameTimeMs - stage.startMs;
 
@@ -158,8 +215,14 @@ async function renderFrames(
 		// frames are piped into ffmpeg as they're generated (not rendered
 		// up front then encoded in a second pass), so "frames sent so far"
 		// tracks real encode progress closely enough — no need to parse
-		// ffmpeg's own stderr progress output for this
-		onProgress?.(Math.round(((n + 1) / totalFrames) * 100));
+		// ffmpeg's own stderr progress output for this. Capped below 100
+		// (not a full 0-100 scale) since ffmpeg still has to finish encoding
+		// after the last frame is piped in — GIF's palettegen/paletteuse pass
+		// in particular keeps running well after every frame has arrived, so
+		// hitting 100% here would leave the UI stuck at "100%" for that whole
+		// remaining stretch. renderExport() emits the real 100% once ffmpeg's
+		// process has actually exited.
+		onProgress?.(Math.round(((n + 1) / totalFrames) * FRAME_PROGRESS_CAP));
 	}
 }
 
@@ -189,7 +252,7 @@ const backgroundVideoPath = `${import.meta.dir}/../client/public/videos/backgrou
 // MP4 output (same container family), but WebM can't carry AAC at all —
 // vorbis is the traditional, always-available WebM audio codec, so that
 // format re-encodes instead of copying.
-const ENCODE_ARGS: Record<string, string[]> = {
+const ENCODE_ARGS: Record<"mp4" | "webm", string[]> = {
 	mp4: ["-c:a", "copy", "-c:v", "libx264", "-preset", "ultrafast"],
 	webm: [
 		"-c:a",
@@ -210,19 +273,71 @@ const ENCODE_ARGS: Record<string, string[]> = {
 export async function renderExport(
 	imagePath: string,
 	orientation: Orientation,
+	resolution: Resolution,
+	fps: FrameRate,
 	format: ExportFormat,
 	dir: string,
 	onProgress?: (percent: number) => void,
 ): Promise<string> {
-	const viewport = VIEWPORTS[orientation];
+	const viewport = VIEWPORTS[orientation][resolution];
 	const outPath = join(dir, `export.${format}`);
 
-	// cover-crops the source background.mp4 (1280x720) down to the export's
-	// viewport — for portrait this also reshapes the aspect ratio, matching
-	// the CSS `min-width/min-height: 100%` "cover" sizing the <video> gets
-	// in the browser; for landscape it's just a downscale to 480p (16:9
-	// already matches, so the crop is a no-op)
-	const bgFilter = `scale=${viewport.width}:${viewport.height}:force_original_aspect_ratio=increase,crop=${viewport.width}:${viewport.height}`;
+	// cover-crops the source background.mp4 (1280x720) down/up to the
+	// export's viewport — for portrait this also reshapes the aspect ratio,
+	// matching the CSS `min-width/min-height: 100%` "cover" sizing the
+	// <video> gets in the browser; for landscape it's just a scale (16:9
+	// already matches every landscape tier, so the crop is a no-op). The
+	// trailing fps filter resamples the background from its own native
+	// ~23.976fps up (or down) to our chosen fps *before* the overlay filter
+	// runs — without it, overlay's output cadence is driven by its *main*
+	// ([0:v], the background) input, so at fps=60 it would still only
+	// sample our 60fps picture-overlay stream ~24 times/sec (confirmed by
+	// testing: framemd5 showed heavy frame duplication, one identical frame
+	// repeated 331 times, at 60fps before this fix) — the picture motion
+	// itself needs the *main* input resampled to the target rate so overlay
+	// actually consumes a distinct overlay frame every output frame.
+	const bgFilter = `scale=${viewport.width}:${viewport.height}:force_original_aspect_ratio=increase,crop=${viewport.width}:${viewport.height},fps=${fps}`;
+
+	// GIF has no audio track and needs a palette pass for reasonable
+	// quality (ffmpeg's default GIF encoder without one looks banded/dithered
+	// badly), so its filter graph/map/tail genuinely diverge from mp4/webm
+	// rather than fitting the same fixed shape. paletteuse's default dither
+	// (sierra2_4a, an error-diffusion algorithm) produces essentially random
+	// per-frame noise that both looks worse and compresses worse than an
+	// ordered (Bayer) dither for this kind of content — measured ~29%
+	// smaller (25.4MB -> 18.1MB at 360p/15fps) with no visible quality
+	// difference at bayer_scale=5 (the coarsest/most size-efficient setting)
+	// vs the default. On top of that, capping the palette to 40 colors
+	// (default is 256) was measured at ~9.5MB at the same settings — a
+	// deliberate quality/size trade-off (visible banding on gradients,
+	// requested and accepted) to land GIF exports in the 5-10MB range
+	// instead of ~18MB. Both measurements confirmed by pixel-comparing
+	// extracted frames, not just file size.
+	const filterComplex =
+		format === "gif"
+			? `[0:v]${bgFilter}[bg];[bg][1:v]overlay=shortest=1[comp];[comp]split[a][b];[a]palettegen=max_colors=40[pal];[b][pal]paletteuse=dither=bayer:bayer_scale=5[out]`
+			: `[0:v]${bgFilter}[bg];[bg][1:v]overlay=shortest=1[comp]`;
+
+	const mapArgs =
+		format === "gif" ? ["-map", "[out]"] : ["-map", "[comp]", "-map", "0:a?"];
+
+	// forces the actual encoded output to our chosen fps — without this,
+	// the muxer just inherits the filter graph's natural framerate (the
+	// *main* input to the overlay filter, i.e. background.mp4's own native
+	// ~23.976fps), silently ignoring whatever fps the rawvideo input above
+	// was piped at. Confirmed by testing: omitting this made every fps
+	// choice other than 24 (background.mp4's own rate, rounded) have no
+	// visible effect at all.
+	const outputFpsArgs = ["-r", `${fps}`];
+
+	// "-shortest"/"-pix_fmt yuv420p" only make sense for the audio-bearing,
+	// yuv-encoded video formats — gif has neither an audio track to trim nor
+	// a yuv pixel format, and ffmpeg picks the gif muxer from outPath's
+	// extension on its own, same as it already does for mp4/webm
+	const tailArgs =
+		format === "gif"
+			? []
+			: [...ENCODE_ARGS[format], "-shortest", "-pix_fmt", "yuv420p"];
 
 	await runFfmpeg(
 		[
@@ -235,28 +350,33 @@ export async function renderExport(
 			"-s",
 			`${viewport.width}x${viewport.height}`,
 			"-r",
-			`${FPS}`,
+			`${fps}`,
 			"-i",
 			"pipe:0",
 			"-filter_complex",
-			`[0:v]${bgFilter}[bg];[bg][1:v]overlay=shortest=1[comp]`,
-			"-map",
-			"[comp]",
-			// "-shortest" trims the (possibly re-encoded) audio track to match
-			// the rendered video length so it doesn't play on past the last frame
-			"-map",
-			"0:a?",
-			...ENCODE_ARGS[format],
-			"-shortest",
-			"-pix_fmt",
-			"yuv420p",
+			filterComplex,
+			...mapArgs,
+			...outputFpsArgs,
+			...tailArgs,
 			"-y",
 			outPath,
 		],
 		async (write) => {
-			await renderFrames(imagePath, orientation, write, onProgress);
+			await renderFrames(
+				imagePath,
+				orientation,
+				resolution,
+				fps,
+				write,
+				onProgress,
+			);
 		},
 	);
+
+	// the frame-loop progress above tops out at FRAME_PROGRESS_CAP, not 100 —
+	// this is the real 100%, only reported once ffmpeg has actually finished
+	// (encoding/palette work can run well after the last frame was piped in)
+	onProgress?.(100);
 
 	return outPath;
 }
@@ -264,6 +384,8 @@ export async function renderExport(
 export type ExportJob = {
 	imagePath: string;
 	orientation: Orientation;
+	resolution: Resolution;
+	fps: FrameRate;
 	format: ExportFormat;
 	dir: string;
 };
