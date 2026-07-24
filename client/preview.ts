@@ -147,7 +147,20 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 		previewDialog.showModal();
 	}
 
-	for (const btn of uploadTriggers) btn.onclick = openSourceStep;
+	// drag & drop and clipboard paste (the whole point of the source step)
+	// aren't reachable when there's no precise pointer available at all —
+	// computed once since input capability doesn't change over a dialog
+	// session. Requiring *both* a coarse/no-hover primary pointer AND no
+	// fine pointer available as a secondary input (any-pointer) avoids
+	// misclassifying a hybrid touchscreen laptop/tablet that also has a
+	// mouse or trackpad attached, which still gets the full desktop flow
+	const isMobile =
+		window.matchMedia("(hover: none) and (pointer: coarse)").matches &&
+		!window.matchMedia("(any-pointer: fine)").matches;
+
+	for (const btn of uploadTriggers) {
+		btn.onclick = isMobile ? () => fileInput.click() : openSourceStep;
+	}
 
 	sourceBrowseBtn.onclick = () => fileInput.click();
 
