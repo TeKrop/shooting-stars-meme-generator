@@ -25,13 +25,7 @@
         </form>
         <div id="quick-actions">
             <button type="button" class="dock-btn upload-trigger" title="Upload your pic" aria-label="Upload your pic">📤</button>
-            <div id="export-group">
-                <button type="button" id="export-btn" class="dock-btn" title="Export as video" aria-label="Export as video" aria-haspopup="true" aria-expanded="false">💾</button>
-                <div id="export-menu" hidden>
-                    <button type="button" class="export-option" data-format="mp4">🎬 MP4</button>
-                    <button type="button" class="export-option" data-format="webm">🎬 WebM</button>
-                </div>
-            </div>
+            <button type="button" id="export-btn" class="dock-btn" title="Export" aria-label="Export">💾</button>
             <div id="volume-group">
                 <button type="button" id="volume-btn" class="dock-btn" title="Volume" aria-label="Volume" aria-haspopup="true" aria-expanded="false">🔊</button>
                 <div id="volume-menu" hidden>
@@ -105,6 +99,47 @@
                     <button id="edit-back" type="button" hidden>⬅ Back</button>
                     <button id="crop-next" type="button" hidden>Next ➔</button>
                     <button id="preview-confirm" type="button" hidden>✦ Upload ✦</button>
+                </div>
+            </div>
+        </dialog>
+        <dialog id="export-options-dialog">
+            <div class="export-options-card">
+                <p class="tagline">✦ Export options ✦</p>
+                <div class="option-row" data-option="orientation">
+                    <span class="option-label">Orientation</span>
+                    <div class="tool-picker">
+                        <button type="button" data-value="landscape" aria-pressed="true">Landscape</button>
+                        <button type="button" data-value="portrait" aria-pressed="false">Portrait</button>
+                    </div>
+                </div>
+                <div class="option-row" data-option="resolution">
+                    <span class="option-label">Resolution</span>
+                    <div class="tool-picker">
+                        <button type="button" data-value="360p" aria-pressed="false">360p</button>
+                        <button type="button" data-value="480p" aria-pressed="true">480p</button>
+                        <button type="button" data-value="720p" aria-pressed="false">720p</button>
+                    </div>
+                </div>
+                <div class="option-row" data-option="fps">
+                    <span class="option-label">Framerate</span>
+                    <div class="tool-picker">
+                        <button type="button" data-value="15" aria-pressed="false">15 fps</button>
+                        <button type="button" data-value="24" aria-pressed="true">24 fps</button>
+                        <button type="button" data-value="60" aria-pressed="false">60 fps</button>
+                    </div>
+                </div>
+                <div class="option-row" data-option="format">
+                    <span class="option-label">Format</span>
+                    <div class="tool-picker">
+                        <button type="button" data-value="mp4" aria-pressed="true">🎬 MP4</button>
+                        <button type="button" data-value="webm" aria-pressed="false">🎬 WebM</button>
+                        <button type="button" data-value="gif" aria-pressed="false">🖼️ GIF</button>
+                    </div>
+                </div>
+                <p id="gif-size-warning" role="alert" hidden></p>
+                <div class="preview-actions">
+                    <button id="export-options-cancel" type="button">✕ Cancel</button>
+                    <button id="export-options-start" type="button">✦ Start export ✦</button>
                 </div>
             </div>
         </dialog>
