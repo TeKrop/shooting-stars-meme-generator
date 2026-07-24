@@ -160,11 +160,11 @@ function randomHash(length: number): string {
 // collision odds are ~1e-8 at default HASH_LENGTH (see MAX_HASH_ATTEMPTS
 // above), so a fixed small retry cap is enough
 async function generateUploadHash(): Promise<string> {
-	let hash = randomHash(HASH_LENGTH);
+	let hash = "";
 	for (let attempts = 0; attempts < MAX_HASH_ATTEMPTS; attempts++) {
+		hash = randomHash(HASH_LENGTH);
 		const collides = await Bun.file(`${uploadsDir}/${hash}.png`).exists();
 		if (!collides) break;
-		hash = randomHash(HASH_LENGTH);
 	}
 	return hash;
 }
