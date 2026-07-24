@@ -97,6 +97,84 @@
 		}
 	}
 
+	/* touch-primary devices can't drag-and-drop or Ctrl-V paste (see
+       client/preview.ts's matching isMobile() check, which skips the
+       source step entirely on these), and the floating card's live
+       backdrop-filter/box-shadow are expensive to keep compositing over
+       the still-animating starfield/video underneath on a mobile GPU — so
+       here the dialog goes fullscreen and opaque instead of floating+blurred */
+	@media (hover: none) and (pointer: coarse) {
+		/* the UA default for dialog:modal caps it at ~100% minus its own
+           border/margin and sets overflow:auto — without overriding that
+           cap here, the card below (forced to a true 100vw/100dvh) ends up
+           slightly bigger than its own <dialog> parent box, and that
+           leftover UA overflow:auto is what was producing the scrollbars */
+		dialog#preview-dialog {
+			width: 100vw;
+			height: 100dvh;
+			max-width: 100vw;
+			max-height: 100dvh;
+		}
+
+		dialog#preview-dialog::backdrop {
+			backdrop-filter: none;
+		}
+
+		.preview-card {
+			width: 100vw;
+			height: 100dvh;
+			max-width: 100vw;
+			max-height: 100dvh;
+			padding: 12px;
+			border-radius: 0;
+			clip-path: none;
+			backdrop-filter: none;
+			box-shadow: none;
+			box-sizing: border-box;
+		}
+
+		/* one flex item (the active step) plus .preview-actions share the
+           card's height; the step grows to fill whatever's left instead of
+           a fixed vw/dvh box that doesn't know how tall its own siblings
+           (tagline, hint text, buttons) actually are — that mismatch is
+           what caused the scrollbars */
+		#source-step,
+		#crop-step,
+		#edit-step {
+			flex: 1;
+			min-height: 0;
+			width: 100%;
+		}
+
+		/* plain boxes with no intrinsic aspect ratio: fill whatever space
+           the step grants them */
+		#source-drop-zone,
+		#crop-area {
+			flex: 1;
+			min-height: 0;
+			width: 100%;
+			max-width: 100%;
+			max-height: 100%;
+		}
+
+		/* unlike the two above, #edit-canvas has a real pixel aspect ratio
+           (set from the cropped image in preview.ts) — flex:1 (flex-basis:
+           0) lets it correctly share space with its siblings (tagline,
+           tool-picker/sliders) without a fixed vw/dvh box, but that same
+           flex-basis:0 doesn't reliably preserve aspect ratio for every
+           source image (most visible on a square crop, where any stretch
+           is obvious). object-fit: contain fixes that split: flexbox is
+           free to size the box however it wants, while the canvas's own
+           rendered bitmap stays letterboxed at its correct ratio inside it */
+		#edit-canvas {
+			flex: 1;
+			min-height: 0;
+			max-width: 100%;
+			max-height: 100%;
+			object-fit: contain;
+		}
+	}
+
 	@media (orientation: portrait) {
 		.console-card {
 			padding: clamp(20px, 4vh, 32px) clamp(16px, 5vw, 32px);

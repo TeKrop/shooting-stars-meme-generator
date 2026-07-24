@@ -311,9 +311,11 @@
 		cursor: pointer;
 	}
 
-	/* purely an internal control now — only ever clicked programmatically by
-       #source-browse-btn inside the preview dialog, never labeled/focused
-       directly (see tabindex="-1" in index.html) */
+	/* purely an internal control now — only ever clicked programmatically,
+       either by #source-browse-btn inside the preview dialog or, on mobile
+       (which skips straight past the source step), directly by the
+       .upload-trigger buttons — never labeled/focused directly (see
+       tabindex="-1" in index.html) */
 	input#file-upload {
 		opacity: 0;
 		position: absolute;

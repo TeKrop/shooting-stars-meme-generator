@@ -57,6 +57,27 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 		updateHistoryButtons();
 	};
 
+	// the mobile fullscreen dialog styles #edit-canvas with object-fit:
+	// contain, which can letterbox the rendered bitmap inside the element's
+	// own box (its aspect ratio no longer has to match the canvas's) — this
+	// resolves the actual rendered content rect so pointer math and cursor
+	// sizing scale against it instead of the (possibly larger) element box
+	function contentRect() {
+		const rect = canvas.getBoundingClientRect();
+		const scale = Math.min(
+			rect.width / canvas.width,
+			rect.height / canvas.height,
+		);
+		const width = canvas.width * scale;
+		const height = canvas.height * scale;
+		return {
+			left: rect.left + (rect.width - width) / 2,
+			top: rect.top + (rect.height - height) / 2,
+			width,
+			height,
+		};
+	}
+
 	// draws the brush outline as the canvas cursor itself, so hovering shows
 	// exactly what the next erase will cover (scaled from canvas pixels to
 	// displayed CSS pixels, since the canvas can be shown smaller than its
@@ -67,8 +88,7 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 		const radius = Number(eraseSizeInput.value);
 		if (!Number.isFinite(radius) || radius <= 0) return;
 
-		const displayRadius =
-			(radius * canvas.getBoundingClientRect().width) / canvas.width;
+		const displayRadius = (radius * contentRect().width) / canvas.width;
 		// rasterize at devicePixelRatio so the outline stays crisp (not
 		// blurry-upscaled) on high-DPI screens; cursor hotspot/size are in
 		// raster pixels, so everything below is scaled by dpr together
@@ -94,7 +114,7 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 	pickBtn.onclick = () => setTool("pick");
 
 	function canvasPoint(e: PointerEvent): { x: number; y: number } {
-		const rect = canvas.getBoundingClientRect();
+		const rect = contentRect();
 		return {
 			x: ((e.clientX - rect.left) * canvas.width) / rect.width,
 			y: ((e.clientY - rect.top) * canvas.height) / rect.height,
@@ -142,9 +162,18 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 		eraseAt(point.x, point.y);
 		canvas.setPointerCapture(e.pointerId);
 
+		// touch pointermove can fire faster than the display refreshes;
+		// coalesce to at most one erase draw per frame instead of one per event
+		let pendingPoint: { x: number; y: number } | null = null;
+		let rafScheduled = false;
 		const onMove = (moveEvent: PointerEvent) => {
-			const p = canvasPoint(moveEvent);
-			eraseAt(p.x, p.y);
+			pendingPoint = canvasPoint(moveEvent);
+			if (rafScheduled) return;
+			rafScheduled = true;
+			requestAnimationFrame(() => {
+				rafScheduled = false;
+				if (pendingPoint) eraseAt(pendingPoint.x, pendingPoint.y);
+			});
 		};
 		// 'lostpointercapture' — rather than 'pointerup' alone — is what
 		// actually guarantees cleanup: it fires whenever capture ends for

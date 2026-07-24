@@ -147,7 +147,15 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 		previewDialog.showModal();
 	}
 
-	for (const btn of uploadTriggers) btn.onclick = openSourceStep;
+	// drag & drop and clipboard paste (the whole point of the source step)
+	// aren't reachable on a touchscreen, so mobile skips it and goes straight
+	// to the native file picker
+	const isMobile = () =>
+		window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+
+	for (const btn of uploadTriggers) {
+		btn.onclick = isMobile() ? () => fileInput.click() : openSourceStep;
+	}
 
 	sourceBrowseBtn.onclick = () => fileInput.click();
 
