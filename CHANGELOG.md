@@ -1,3 +1,10 @@
+## [2.8.2](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.8.1...v2.8.2) (2026-07-24)
+
+
+### Bug Fixes
+
+* disable starfield animation on mobile for perf ([#38](https://github.com/TeKrop/shooting-stars-meme-generator/issues/38)) ([e3b8d78](https://github.com/TeKrop/shooting-stars-meme-generator/commit/e3b8d7868465c32dc1c0880b535f6f7bb010e859))
+
 ## [2.8.1](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.8.0...v2.8.1) (2026-07-24)
 
 
