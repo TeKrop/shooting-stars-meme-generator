@@ -20,6 +20,19 @@ const tapToPlayText =
 // of leaving them to fire later and stomp on the new run's classes
 let animationTimeouts: ReturnType<typeof setTimeout>[] = [];
 
+// how long to wait for the video's `playing` event before starting the
+// picture choreography anyway — covers stalled buffering, a decode error,
+// or a play() rejection, any of which would otherwise never fire `playing`
+// and leave the choreography stuck waiting forever
+const PLAYING_FALLBACK_MS = 1000;
+
+// the current run's pending "start the choreography" trigger (either the
+// video's `playing` event or the fallback timeout above, whichever fires
+// first) — tracked so a restart before either has fired can cancel them,
+// instead of leaving a stale one to double-schedule alongside the new run's
+let pendingTimelineStart: (() => void) | null = null;
+let pendingTimelineFallback: ReturnType<typeof setTimeout> | null = null;
+
 // showLaunchPrompt() re-runs on every restart (video 'ended', or a fresh
 // upload) — this guards against re-attaching the click/touchend listeners
 // each time, which would otherwise fire startAnimation multiple times per
@@ -83,17 +96,52 @@ export function startAnimation() {
 	});
 	animationTimeouts = [];
 
+	// cancel any still-pending choreography trigger from a previous run, so
+	// it can't fire later and double-schedule alongside this run's
+	if (pendingTimelineStart) {
+		video.removeEventListener("playing", pendingTimelineStart);
+	}
+	if (pendingTimelineFallback !== null) {
+		clearTimeout(pendingTimelineFallback);
+	}
+
 	// fades out rather than vanishing instantly, so the console visibly
 	// hands off to the image that flies in during the "init" stage below
 	landing.classList.add("fade-out");
 	starfield.classList.add("fade-out");
 	video.style.display = "block";
 
+	const startTimelineOnce = () => {
+		video.removeEventListener("playing", startTimelineOnce);
+		if (pendingTimelineFallback !== null) {
+			clearTimeout(pendingTimelineFallback);
+		}
+		pendingTimelineStart = null;
+		pendingTimelineFallback = null;
+		scheduleTimeline();
+	};
+	pendingTimelineStart = startTimelineOnce;
+
+	// don't schedule the picture choreography until the video has actually
+	// started rendering frames — on mobile, play()-call-to-first-frame
+	// latency is high enough that scheduling immediately (as before) makes
+	// the pictures visibly get ahead of the video. The fallback timeout
+	// covers the case where `playing` never fires at all (see
+	// PLAYING_FALLBACK_MS above).
+	video.addEventListener("playing", startTimelineOnce, { once: true });
+	pendingTimelineFallback = setTimeout(startTimelineOnce, PLAYING_FALLBACK_MS);
+
 	// play the background video from the start, even if a previous run
 	// left it mid-playback
 	video.currentTime = 0;
-	video.play();
+	video.play().catch(() => {
+		// autoplay blocked or playback otherwise failed to start — the
+		// fallback timeout above still kicks off the choreography so it
+		// isn't left stuck waiting for a video that will never play
+	});
+}
 
+function scheduleTimeline() {
 	// main loop for class change events
 	for (const time in ANIMATION_TIMELINE) {
 		const id = setTimeout(() => {
