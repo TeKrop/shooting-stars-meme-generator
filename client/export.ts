@@ -162,8 +162,8 @@ export function initExport() {
 	exportBtn.addEventListener("click", () => {
 		if (exportBtn.disabled) return;
 
-		// default orientation is keyed off device type (mobile -> landscape,
-		// everything else -> portrait), not the current viewport orientation
+		// default orientation is keyed off device type (mobile -> portrait,
+		// everything else -> landscape), not the current viewport orientation
 		// — a deliberate product choice, still overridable in the dialog.
 		// Same isMobile check as preview.ts's source-step (hover:none +
 		// coarse pointer, without a fine pointer also present, to avoid
@@ -172,7 +172,7 @@ export function initExport() {
 		const isMobile =
 			window.matchMedia("(hover: none) and (pointer: coarse)").matches &&
 			!window.matchMedia("(any-pointer: fine)").matches;
-		selectOption(orientationGroup, isMobile ? "landscape" : "portrait");
+		selectOption(orientationGroup, isMobile ? "portrait" : "landscape");
 		selectOption(resolutionGroup, "480p");
 		selectOption(fpsGroup, "24");
 		selectOption(formatGroup, "mp4");

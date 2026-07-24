@@ -307,15 +307,26 @@ export async function renderExport(
 	// ordered (Bayer) dither for this kind of content — measured ~29%
 	// smaller (25.4MB -> 18.1MB at 360p/15fps) with no visible quality
 	// difference at bayer_scale=5 (the coarsest/most size-efficient setting)
-	// vs the default. On top of that, capping the palette to 40 colors
-	// (default is 256) was measured at ~9.5MB at the same settings — a
-	// deliberate quality/size trade-off (visible banding on gradients,
-	// requested and accepted) to land GIF exports in the 5-10MB range
-	// instead of ~18MB. Both measurements confirmed by pixel-comparing
-	// extracted frames, not just file size.
+	// vs the default. The full 256-color palette (palettegen's default) is
+	// kept as-is — capping max_colors was tried and measured smaller but
+	// caused visible banding, so it was rejected in favor of the size cut
+	// below, which doesn't touch color depth at all.
+	//
+	// GIF_SCALE_FACTOR downscales the *composited* frame (not the canvas
+	// render itself, which stays at the full chosen resolution) right before
+	// the palette/gif encode stage — this trims pixel count (the dominant
+	// cost driver for GIF size, more so than frame count: mpdecimate-style
+	// duplicate-frame dropping was measured to barely move file size at all)
+	// without reducing color count or introducing dithering artifacts.
+	// Rendering at full resolution and downscaling afterwards also looks
+	// better than natively rendering smaller would (closer to supersampling)
+	// — confirmed by pixel-comparing extracted frames: no visible banding,
+	// unlike the max_colors approach. Measured ~8.9MB at 360p/15fps (down
+	// from ~18.1MB unscaled), comfortably inside a 5-10MB target.
+	const GIF_SCALE_FACTOR = 2 / 3;
 	const filterComplex =
 		format === "gif"
-			? `[0:v]${bgFilter}[bg];[bg][1:v]overlay=shortest=1[comp];[comp]split[a][b];[a]palettegen=max_colors=40[pal];[b][pal]paletteuse=dither=bayer:bayer_scale=5[out]`
+			? `[0:v]${bgFilter}[bg];[bg][1:v]overlay=shortest=1[comp];[comp]scale=iw*${GIF_SCALE_FACTOR}:ih*${GIF_SCALE_FACTOR}[small];[small]split[a][b];[a]palettegen[pal];[b][pal]paletteuse=dither=bayer:bayer_scale=5[out]`
 			: `[0:v]${bgFilter}[bg];[bg][1:v]overlay=shortest=1[comp]`;
 
 	const mapArgs =
