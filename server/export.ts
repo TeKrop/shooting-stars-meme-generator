@@ -14,14 +14,21 @@ import {
 	ANIMATION_TIMELINE,
 	pictureAnimationKey,
 } from "../client/animation-timeline";
+// re-exported below (via `export *`) so server.ts/export-worker.ts's
+// existing `from "./export"` imports don't need to change — this file
+// stays the single import point for server-side export code, it just
+// sources the option types/GIF caps/clamping logic from client/ now
+// instead of defining its own copy (see export-options.ts for why)
+import {
+	type ExportFormat,
+	FRAME_PROGRESS_CAP,
+	type FrameRate,
+	type Orientation,
+	type Resolution,
+} from "../client/export-options";
 import { ANIMATIONS, resolvePictureFrame } from "./keyframes";
 
-export type Orientation = "landscape" | "portrait";
-// 720p is the max tier: background.mp4 itself is authored at 1280x720, so a
-// 1080p export would just be upscaling the background for no real gain
-export type Resolution = "360p" | "480p" | "720p";
-export type FrameRate = 15 | 24 | 60;
-export type ExportFormat = "mp4" | "webm" | "gif";
+export * from "../client/export-options";
 
 export const ORIENTATIONS: Orientation[] = ["landscape", "portrait"];
 export const RESOLUTIONS: Resolution[] = ["360p", "480p", "720p"];
@@ -32,33 +39,6 @@ export const DEFAULT_ORIENTATION: Orientation = "landscape";
 export const DEFAULT_RESOLUTION: Resolution = "480p";
 export const DEFAULT_FPS: FrameRate = 24;
 export const DEFAULT_FORMAT: ExportFormat = "mp4";
-
-// GIF's palette-generation pass plus GIF's inherently poor compression for
-// video-like content make high resolution/framerate impractically slow and
-// huge: measured at ~146s/~324MB for 1080p/60fps, vs ~20s/~6MB for the same
-// settings as WebM. Clamping GIF down keeps one format from blowing the
-// render-time budget every other export relies on — 720p is excluded, but
-// 360p/480p are both allowed at full (unscaled) resolution: the client
-// warns with a real size estimate before the user commits to one of these,
-// rather than silently capping resolution further the way fps still is.
-export const GIF_MAX_RESOLUTION: Resolution = "480p";
-export const GIF_MAX_FPS: FrameRate = 24;
-
-const RESOLUTION_ORDER: Resolution[] = ["360p", "480p", "720p"];
-
-export function clampForGif(
-	resolution: Resolution,
-	fps: FrameRate,
-): { resolution: Resolution; fps: FrameRate } {
-	return {
-		resolution:
-			RESOLUTION_ORDER.indexOf(resolution) >
-			RESOLUTION_ORDER.indexOf(GIF_MAX_RESOLUTION)
-				? GIF_MAX_RESOLUTION
-				: resolution,
-		fps: fps > GIF_MAX_FPS ? GIF_MAX_FPS : fps,
-	};
-}
 
 // 480p is the original/default tier — kept unchanged from before resolution
 // was configurable, for continuity with any bookmarked/shared export
@@ -124,10 +104,6 @@ function findStage(timeMs: number) {
 	}
 	return active;
 }
-
-// leaves room for ffmpeg's own post-last-frame encoding work (see the
-// onProgress call in renderFrames below) before jumping to a real 100%
-const FRAME_PROGRESS_CAP = 95;
 
 function cssFilterString(filter: {
 	kind: "none" | "saturate" | "contrast";
