@@ -171,15 +171,15 @@ const server = Bun.serve({
 				}
 
 				let hash = randomstring.generate(HASH_LENGTH);
-				for (
-					let attempts = 0;
-					attempts < MAX_HASH_ATTEMPTS &&
-					(await Bun.file(`${uploadsDir}/${hash}.png`).exists());
-					attempts++
-				) {
+				let storedName = `${hash}.png`;
+				for (let attempts = 0; attempts < MAX_HASH_ATTEMPTS; attempts++) {
+					const collides = await Bun.file(
+						`${uploadsDir}/${storedName}`,
+					).exists();
+					if (!collides) break;
 					hash = randomstring.generate(HASH_LENGTH);
+					storedName = `${hash}.png`;
 				}
-				const storedName = `${hash}.png`;
 				await Bun.write(`${uploadsDir}/${storedName}`, file);
 				log("upload OK:", storedName, file.type, `${file.size} bytes`);
 				return withSecurityHeaders(Response.redirect(`/${hash}`, 303));
