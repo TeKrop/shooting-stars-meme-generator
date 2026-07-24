@@ -18,10 +18,8 @@ export type AnimationStage = {
 // same thing as its gap to the next stage. These are still independently,
 // manually chosen and must stay in sync with stars.css and
 // background.mp4's runtime by hand.
-type StageDef = {
-	class: string;
+type StageDef = AnimationStage & {
 	gapMs: number;
-	pictures: string[];
 };
 
 const STAGE_DEFS: StageDef[] = [
