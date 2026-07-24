@@ -95,6 +95,36 @@
 			font-size: 10px;
 			padding: 6px 10px;
 		}
+
+		/* the export options dialog sizes itself to its widest .option-row
+           (format, 3 buttons) — on a narrow viewport the dialog then gets
+           squeezed below that intrinsic width, so which rows wrap becomes a
+           per-row accident of how much text that row happens to hold. Force
+           every row to stack the same way instead, and cap the dialog's own
+           width so content can't push it into a horizontal scrollbar. */
+		dialog#export-options-dialog,
+		dialog#export-progress-dialog {
+			width: min(94vw, 360px);
+			max-width: 94vw;
+		}
+
+		.export-options-card,
+		.export-progress-card {
+			width: 100%;
+			min-width: 0;
+			padding: 20px;
+			box-sizing: border-box;
+		}
+
+		.option-row {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 8px;
+		}
+
+		.tool-picker {
+			flex-wrap: wrap;
+		}
 	}
 
 	/* touch-primary devices can't drag-and-drop or Ctrl-V paste (see
