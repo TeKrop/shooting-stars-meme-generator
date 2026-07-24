@@ -89,11 +89,19 @@ export function startAnimation() {
 	starfield.classList.add("fade-out");
 	video.style.display = "block";
 
+	// don't schedule the picture choreography until the video has actually
+	// started rendering frames — on mobile, play()-call-to-first-frame
+	// latency is high enough that scheduling immediately (as before) makes
+	// the pictures visibly get ahead of the video
+	video.addEventListener("playing", scheduleTimeline, { once: true });
+
 	// play the background video from the start, even if a previous run
 	// left it mid-playback
 	video.currentTime = 0;
 	video.play();
+}
 
+function scheduleTimeline() {
 	// main loop for class change events
 	for (const time in ANIMATION_TIMELINE) {
 		const id = setTimeout(() => {
