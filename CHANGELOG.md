@@ -1,3 +1,10 @@
+# [2.6.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.5.0...v2.6.0) (2026-07-24)
+
+
+### Features
+
+* add copy-link button, footer version, and hash-collision retry ([#32](https://github.com/TeKrop/shooting-stars-meme-generator/issues/32)) ([095dfc1](https://github.com/TeKrop/shooting-stars-meme-generator/commit/095dfc168c3390ac3d779361340cd170487299a1))
+
 # [2.5.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.4.1...v2.5.0) (2026-07-24)
 
 
