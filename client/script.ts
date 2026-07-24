@@ -1,6 +1,9 @@
+import { version } from "../package.json";
 import { restartAnimation, startAnimation } from "./animation";
 import { initExport } from "./export";
 import { initPreviewDialog } from "./preview";
+
+const COPY_TOAST_DISMISS_MS = 4000;
 
 // pictures
 const picturesContainer = document.getElementById(
@@ -30,6 +33,34 @@ fileUpload.addEventListener("focus", () => {
 });
 fileUpload.addEventListener("blur", () => {
 	document.body.classList.remove("file-upload-focused");
+});
+
+(document.getElementById("app-version") as HTMLElement).textContent =
+	`v${version}`;
+
+// copy-link: reuses the same toast element preview.ts/export.ts use for
+// error messages — a generic dismissible message, not error-specific
+const copyLinkBtn = document.getElementById(
+	"copy-link-btn",
+) as HTMLButtonElement;
+const copyToast = document.getElementById("upload-error") as HTMLElement;
+const copyToastText = copyToast.querySelector("p") as HTMLParagraphElement;
+let copyToastTimeout: ReturnType<typeof setTimeout> | null = null;
+
+copyLinkBtn.addEventListener("click", async () => {
+	try {
+		await navigator.clipboard.writeText(window.location.href);
+		copyToastText.textContent = "Link copied!";
+		copyToast.classList.add("toast-success");
+	} catch {
+		copyToastText.textContent = "Couldn't copy the link.";
+		copyToast.classList.remove("toast-success");
+	}
+	copyToast.hidden = false;
+	if (copyToastTimeout) clearTimeout(copyToastTimeout);
+	copyToastTimeout = setTimeout(() => {
+		copyToast.hidden = true;
+	}, COPY_TOAST_DISMISS_MS);
 });
 
 // init animation

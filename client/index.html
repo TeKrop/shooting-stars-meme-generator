@@ -32,7 +32,7 @@
                     <button type="button" class="export-option" data-format="webm">🎬 WebM</button>
                 </div>
             </div>
-            <button type="button" class="dock-btn" disabled title="Copy link (soon)" aria-label="Copy link (soon)">🔗</button>
+            <button type="button" id="copy-link-btn" class="dock-btn" title="Copy link" aria-label="Copy link">🔗</button>
         </div>
         <div id="landing">
             <div class="console-card">
@@ -101,7 +101,7 @@
         </dialog>
         <div id="pictures-container"></div>
         <footer>
-            <p><span class="status-dot"></span> root@shooting-stars:~$ credits --author "<a href="https://tekrop.fr" target="_blank">Valentin &quot;TeKrop&quot; PORCHET</a>" --terms "<a href="https://github.com/TeKrop/shooting-stars-meme-generator/blob/main/CGU.md" target="_blank">terms and conditions</a>" <span class="cursor">_</span></p>
+            <p><span class="status-dot"></span> root@shooting-stars:~$ credits --version "<span id="app-version"></span>" --author "<a href="https://tekrop.fr" target="_blank">Valentin &quot;TeKrop&quot; PORCHET</a>" --terms "<a href="https://github.com/TeKrop/shooting-stars-meme-generator/blob/main/CGU.md" target="_blank">terms and conditions</a>" <span class="cursor">_</span></p>
         </footer>
         <script type="module" src="./script.ts"></script>
     </body>

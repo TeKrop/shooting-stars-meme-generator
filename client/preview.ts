@@ -63,6 +63,7 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 
 	function showUploadError(message: string) {
 		uploadErrorText.textContent = message;
+		uploadError.classList.remove("toast-success");
 		uploadError.hidden = false;
 		if (uploadErrorTimeout) clearTimeout(uploadErrorTimeout);
 		uploadErrorTimeout = setTimeout(() => {
