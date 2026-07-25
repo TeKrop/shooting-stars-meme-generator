@@ -1,19 +1,21 @@
 import { describe, expect, test } from "bun:test";
 import { ANIMATION_TIMELINE } from "../client/animation-timeline.ts";
-import {
-	buildFilterComplex,
-	cssFilterString,
-	findStage,
-	pictureBox,
-	renderFilterChain,
-	renderFilterComplex,
-	travelScale,
-} from "../server/export.ts";
+import { testInternals } from "../server/export.ts";
 import {
 	interpolate,
 	type PictureAnimation,
 	resolvePictureFrame,
 } from "../server/keyframes.ts";
+
+const {
+	travelScale,
+	pictureBox,
+	findStage,
+	cssFilterString,
+	renderFilterChain,
+	renderFilterComplex,
+	buildFilterComplex,
+} = testInternals;
 
 describe("interpolate", () => {
 	test("returns the identity value for an empty control-point array", () => {
