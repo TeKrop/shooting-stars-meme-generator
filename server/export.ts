@@ -62,14 +62,14 @@ const VIEWPORTS: Record<
 // matches base.css's `--travel-scale: clamp(0.25, calc(100vw / 1400px), 1)`
 // — computed once per orientation since the export always uses a fixed
 // viewport size (no responsive resize mid-render)
-function travelScale(viewportWidth: number): number {
+export function travelScale(viewportWidth: number): number {
 	return Math.min(1, Math.max(0.25, viewportWidth / 1400));
 }
 
 // matches base.css's `img { max-width: calc(30% / var(--travel-scale)) }`
 // (and max-height, same formula against viewport height) — the box an
 // uploaded image is fit into before the keyframe transform applies
-function pictureBox(
+export function pictureBox(
 	viewport: { width: number; height: number },
 	scale: number,
 ) {
@@ -94,7 +94,7 @@ const timeline = Object.entries(ANIMATION_TIMELINE)
 	.map(([ms, stage]) => ({ startMs: Number(ms), ...stage }))
 	.sort((a, b) => a.startMs - b.startMs);
 
-function findStage(timeMs: number) {
+export function findStage(timeMs: number) {
 	let active = timeline[0];
 	for (const stage of timeline) {
 		if (stage.startMs > timeMs) break;
@@ -103,7 +103,7 @@ function findStage(timeMs: number) {
 	return active;
 }
 
-function cssFilterString(filter: {
+export function cssFilterString(filter: {
 	kind: "none" | "saturate" | "contrast";
 	amount: number;
 }) {
@@ -249,18 +249,18 @@ const ENCODE_ARGS: Record<"mp4" | "webm", string[]> = {
 	],
 };
 
-type FfmpegFilterStep = {
+export type FfmpegFilterStep = {
 	filter: string;
 	args?: Record<string, string | number>;
 };
 
-type FfmpegFilterChain = {
+export type FfmpegFilterChain = {
 	inputs?: string[];
 	steps: FfmpegFilterStep[];
 	outputs?: string[];
 };
 
-function renderFilterChain(chain: FfmpegFilterChain): string {
+export function renderFilterChain(chain: FfmpegFilterChain): string {
 	const inputs = (chain.inputs ?? []).map((label) => `[${label}]`).join("");
 	const outputs = (chain.outputs ?? []).map((label) => `[${label}]`).join("");
 	const steps = chain.steps
@@ -275,11 +275,11 @@ function renderFilterChain(chain: FfmpegFilterChain): string {
 	return `${inputs}${steps}${outputs}`;
 }
 
-function renderFilterComplex(chains: FfmpegFilterChain[]): string {
+export function renderFilterComplex(chains: FfmpegFilterChain[]): string {
 	return chains.map(renderFilterChain).join(";");
 }
 
-function buildFilterComplex(
+export function buildFilterComplex(
 	viewport: { width: number; height: number },
 	fps: FrameRate,
 	format: ExportFormat,
