@@ -1,3 +1,10 @@
+## [2.9.3](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.9.2...v2.9.3) (2026-07-25)
+
+
+### Bug Fixes
+
+* verify PNG magic bytes on upload instead of trusting Content-Type ([#46](https://github.com/TeKrop/shooting-stars-meme-generator/issues/46)) ([2f28a52](https://github.com/TeKrop/shooting-stars-meme-generator/commit/2f28a52777dccf6d9cd1943791b9835a4c91c4c5))
+
 ## [2.9.2](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.9.1...v2.9.2) (2026-07-24)
 
 
