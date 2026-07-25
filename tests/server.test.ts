@@ -329,6 +329,24 @@ describe("GET /export/*", () => {
 			`attachment; filename="${hash}.mp4"`,
 		);
 	}, 30_000);
+
+	// exportInProgress is a real single-slot lock (see server/server.ts), not
+	// mocked — firing two renders at once is enough to hit the 429 branch.
+	// Polls /export-status instead of a fixed delay to know the lock is
+	// actually held before firing the second request, so this can't flake
+	// under a slow/fast environment the way a hardcoded sleep could.
+	test("rejects a second concurrent export with 429", async () => {
+		const first = fetch(new URL("/export/?orientation=landscape", server.url));
+		while (true) {
+			const status = await fetch(new URL("/export-status", server.url));
+			if ((await status.json()).inProgress) break;
+		}
+		const second = await fetch(
+			new URL("/export/?orientation=portrait", server.url),
+		);
+		expect(second.status).toBe(429);
+		await first;
+	}, 30_000);
 });
 
 describe("GET /export-status", () => {

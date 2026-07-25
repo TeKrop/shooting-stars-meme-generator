@@ -478,3 +478,19 @@ export function renderExportInWorker(
 		worker.on("error", reject);
 	});
 }
+
+// grouped under one name, rather than individually exported, so the
+// module's real public API (renderExport/renderExportInWorker/the format
+// constants above) stays the only thing other files can see — these are
+// pure helpers with no I/O, exposed here purely so tests/keyframes.test.ts
+// can call them directly instead of only exercising them incidentally
+// through a full end-to-end render.
+export const testInternals = {
+	travelScale,
+	pictureBox,
+	findStage,
+	cssFilterString,
+	renderFilterChain,
+	renderFilterComplex,
+	buildFilterComplex,
+};
