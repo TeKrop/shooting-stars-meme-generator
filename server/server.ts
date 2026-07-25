@@ -169,6 +169,19 @@ async function generateUploadHash(): Promise<string> {
 	return hash;
 }
 
+// the 8-byte PNG magic number (see the PNG spec) — checked against the
+// actual uploaded bytes since the client-declared Content-Type can be
+// spoofed by a raw POST, and the stored file is later fed straight into
+// the export renderer's native image decoder
+const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+async function hasPngSignature(file: Blob): Promise<boolean> {
+	const header = new Uint8Array(
+		await file.slice(0, PNG_SIGNATURE.length).arrayBuffer(),
+	);
+	return PNG_SIGNATURE.every((byte, i) => header[i] === byte);
+}
+
 function parseExportOptions(searchParams: URLSearchParams): {
 	orientation: Orientation;
 	format: ExportFormat;
@@ -232,7 +245,12 @@ const server = Bun.serve({
 				// PNG-only: the client always crops/re-encodes through canvas
 				// before uploading (needed for the transparency-editing
 				// feature regardless of the original file's format), so
-				// there's no legitimate case where anything else arrives here
+				// there's no legitimate case where anything else arrives here.
+				// `file.type` is just the client-declared Content-Type on the
+				// multipart part, not a fact about the actual bytes, so it's
+				// only a cheap early-out here — the magic-byte check below is
+				// what actually gates what gets written to disk and later fed
+				// to the export renderer's native image decoder.
 				if (!(file instanceof Blob) || file.type !== "image/png") {
 					log(
 						"upload rejected: not a PNG",
@@ -249,6 +267,13 @@ const server = Bun.serve({
 					log("upload rejected: too large", `${file.size} bytes`);
 					return withSecurityHeaders(
 						Response.redirect("/?error=too_large", 303),
+					);
+				}
+
+				if (!(await hasPngSignature(file))) {
+					log("upload rejected: not a PNG (bad signature)");
+					return withSecurityHeaders(
+						Response.redirect("/?error=invalid_type", 303),
 					);
 				}
 

@@ -4,6 +4,12 @@ import server from "../server/server.ts";
 
 const uploadedHashes: string[] = [];
 
+// the real 8-byte PNG magic number, used to build a Blob that passes the
+// server's content-sniffing check regardless of what bytes follow it
+const PNG_SIGNATURE = new Uint8Array([
+	0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+]);
+
 // used by tests that need a real hash to export by, rather than the default
 // doge image — uploads the real doge.png bytes (not a "fake-png-bytes"
 // placeholder like the plain upload tests use) since exporting actually
@@ -93,7 +99,7 @@ describe("POST /upload", () => {
 		const form = new FormData();
 		form.set(
 			"file-upload",
-			new Blob(["fake-png-bytes"], { type: "image/png" }),
+			new Blob([PNG_SIGNATURE, "fake-png-bytes"], { type: "image/png" }),
 			"test.png",
 		);
 
@@ -130,6 +136,27 @@ describe("POST /upload", () => {
 			"file-upload",
 			new Blob(["fake-png-bytes"], { type: "image/png" }),
 			"photo.jpg",
+		);
+
+		const res = await fetch(new URL("/upload", server.url), {
+			method: "POST",
+			body: form,
+			redirect: "manual",
+		});
+
+		expect(res.status).toBe(303);
+		expect(res.headers.get("location")).toBe("/?error=invalid_type");
+	});
+
+	test("rejects a spoofed Content-Type whose bytes aren't actually a PNG", async () => {
+		// a raw client can declare `image/png` on the multipart part
+		// regardless of the real bytes — the server must check the actual
+		// file content, not just trust the declared type
+		const form = new FormData();
+		form.set(
+			"file-upload",
+			new Blob(["not-a-real-png"], { type: "image/png" }),
+			"test.png",
 		);
 
 		const res = await fetch(new URL("/upload", server.url), {
