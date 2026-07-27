@@ -1,3 +1,10 @@
+## [2.10.1](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.10.0...v2.10.1) (2026-07-27)
+
+
+### Bug Fixes
+
+* add missing DOCTYPE to prevent quirks mode rendering ([#49](https://github.com/TeKrop/shooting-stars-meme-generator/issues/49)) ([4fdb2ff](https://github.com/TeKrop/shooting-stars-meme-generator/commit/4fdb2ff6bcdf72d1b097c6522d39ed4ba24fd143))
+
 # [2.10.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.9.3...v2.10.0) (2026-07-27)
 
 
