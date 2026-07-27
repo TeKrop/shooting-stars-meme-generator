@@ -1,3 +1,10 @@
+# [2.10.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.9.3...v2.10.0) (2026-07-27)
+
+
+### Features
+
+* log deleted upload count from cleanup job ([#48](https://github.com/TeKrop/shooting-stars-meme-generator/issues/48)) ([ad3cc58](https://github.com/TeKrop/shooting-stars-meme-generator/commit/ad3cc5853999576943f70f50e4958fa6ab12f43e))
+
 ## [2.9.3](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.9.2...v2.9.3) (2026-07-25)
 
 
