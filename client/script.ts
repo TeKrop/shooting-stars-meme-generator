@@ -30,8 +30,8 @@ for (let i = nbPictures; i >= 1; i--) {
 
 requireElement<HTMLElement>("app-version").textContent = `v${version}`;
 
-// copy-link: reuses the same toast element preview.ts/export.ts use for
-// error messages — a generic dismissible message, not error-specific
+// The copy-link control. It reuses the toast element of preview.ts and
+// export.ts. That element shows any dismissible message, not errors alone.
 const copyLinkBtn = requireElement<HTMLButtonElement>("copy-link-btn");
 const copyToast = requireElement<HTMLElement>("upload-error");
 const copyToastText = copyToast.querySelector("p") as HTMLParagraphElement;
@@ -46,9 +46,8 @@ function showCopyToast() {
 }
 
 copyLinkBtn.addEventListener("click", async () => {
-	// clipboard access needs a secure context (HTTPS/localhost) and can be
-	// denied by the user, so both are worth telling apart rather than one
-	// generic failure message
+	// Clipboard access needs a secure context, over HTTPS or on localhost.
+	// The user can also deny it. Each case deserves its own message.
 	if (!navigator.clipboard) {
 		copyToastText.textContent = "Clipboard isn't available in this browser.";
 		copyToast.classList.remove("toast-success");
@@ -74,9 +73,9 @@ initExport();
 initVolumeControl();
 
 /**
- * Swaps in a freshly uploaded image without a full page reload: updates the
- * pictures' src, updates the URL to match (so the link stays shareable),
- * and launches the animation right away so the upload feels instant.
+ * Swaps in a new upload without a page reload: updates each picture src,
+ * updates the URL so the link stays shareable, then launches the animation
+ * at once so the upload feels instant.
  */
 function applyUploadedImage(hash: string) {
 	const src = `uploads/${hash}`;

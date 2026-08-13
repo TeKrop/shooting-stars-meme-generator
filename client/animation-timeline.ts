@@ -1,23 +1,17 @@
-// Pure data, no DOM access — split out of animation.ts so server/export.ts
-// can import the choreography table without pulling in animation.ts's
-// top-level `document.getElementById(...)` calls (which throw outside a
-// browser, e.g. under `bun test`).
+// Pure data, with no DOM access. The split from animation.ts lets
+// server/export.ts import the choreography table alone: the top-level
+// `document.getElementById(...)` calls there throw under `bun test`.
 
 export type AnimationStage = {
 	class: string;
 	pictures: string[];
 };
 
-// Authored as relative gaps (ms since the previous stage started) rather
-// than absolute cumulative offsets, so retiming one stage doesn't require
-// hand-recomputing every later stage's key — ANIMATION_TIMELINE below is
-// derived from this at module load. gapMs has NO derived relationship to
-// server/keyframes.ts's per-animation durationMs or to stars.css's keyframe
-// durations (see CLAUDE.md): stages are staggered entrances, not
-// back-to-back full loops, so a stage's own animation duration isn't the
-// same thing as its gap to the next stage. These are still independently,
-// manually chosen and must stay in sync with stars.css and
-// background.mp4's runtime by hand.
+// Relative gaps, in milliseconds since the previous stage started. Absolute
+// offsets would force a recount of every later key after one retiming.
+// gapMs derives from nothing else. A stage is a staggered entrance, not a
+// full loop, so its animation duration is not its gap to the next stage.
+// Keep these in step with stars.css and background.mp4 by hand.
 type StageDef = AnimationStage & {
 	gapMs: number;
 };
@@ -47,20 +41,15 @@ function buildTimeline(defs: StageDef[]): Record<number, AnimationStage> {
 	return table;
 }
 
-// the choreography table: millisecond offsets (from startAnimation()) to
-// which stage class applies and which pictN ids are visible at that point.
-// Shared with the server-side export renderer (server/export.ts) so both
-// drive the exact same timeline instead of keeping separate copies — this
-// must still stay in sync with stars.css's keyframe durations by hand (see
-// CLAUDE.md), but at least the timeline itself now has one source of truth.
+// The choreography table: a millisecond offset from startAnimation() to the
+// active stage class and its visible pictN ids. server/export.ts shares it,
+// so both sides drive the same timeline.
 export const ANIMATION_TIMELINE: Record<number, AnimationStage> =
 	buildTimeline(STAGE_DEFS);
 
-// the `${stageClass}_${pictureIndex + 1}` convention used to key both
-// ANIMATIONS (server/keyframes.ts) and stars.css's class selectors —
-// centralized here (rather than duplicated in client/animation.ts and
-// server/export.ts) so a typo/renumbering in one call site can't silently
-// diverge from the other.
+// The `${stageClass}_${pictureIndex + 1}` convention that keys both
+// ANIMATIONS and the stars.css class selectors. One function, so a typo or a
+// renumbering cannot make two call sites disagree.
 export function pictureAnimationKey(
 	stageClass: string,
 	pictureIndex: number,

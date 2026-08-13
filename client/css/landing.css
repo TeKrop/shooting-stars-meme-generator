@@ -71,9 +71,9 @@
 		);
 	}
 
-	/* idle-state UI — title + tagline + both CTAs, faded out together as a
-       single unit once the animation launches (see #landing.fade-out and
-       script.ts's startAnimation/showLaunchPrompt) */
+	/* The idle-state UI: title, tagline, and both buttons, faded out together
+       as one unit at launch. See #landing.fade-out and startAnimation in
+       script.ts. */
 	#landing {
 		display: none;
 		position: fixed;
@@ -83,10 +83,9 @@
 		justify-content: center;
 		padding: 24px;
 		box-sizing: border-box;
-		/* the flex box spans the full viewport (inset: 0) but only
-           .console-card is actually visible — without this, the empty area
-           around the card (which overlaps the footer) would still swallow
-           clicks meant for whatever's underneath */
+		/* The flex box spans the viewport through `inset: 0`, but only
+           .console-card is visible. Without this, the empty area around the
+           card overlaps the footer and swallows its clicks. */
 		pointer-events: none;
 
 		transition: opacity 0.4s ease;
@@ -94,10 +93,9 @@
 		&.fade-out {
 			opacity: 0;
 
-			/* .console-card sets its own pointer-events: auto below, which an
-               ancestor's pointer-events alone can't override — without this
-               the invisible card still intercepts clicks/keyboard focus for
-               the whole animation run */
+			/* .console-card sets its own `pointer-events: auto` below, which
+               an ancestor cannot override. Without this the invisible card
+               keeps taking clicks for the whole animation. */
 			.console-card {
 				pointer-events: none;
 			}

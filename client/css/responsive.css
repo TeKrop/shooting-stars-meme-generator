@@ -96,12 +96,10 @@
 			padding: 6px 10px;
 		}
 
-		/* the export options dialog sizes itself to its widest .option-row
-           (format, 3 buttons) — on a narrow viewport the dialog then gets
-           squeezed below that intrinsic width, so which rows wrap becomes a
-           per-row accident of how much text that row happens to hold. Force
-           every row to stack the same way instead, and cap the dialog's own
-           width so content can't push it into a horizontal scrollbar. */
+		/* The dialog takes the width of its widest .option-row. A narrow
+           viewport squeezes it below that, and each row then wraps on its
+           own text length. These rules stack every row the same way and cap
+           the dialog width, so content cannot force a scrollbar. */
 		dialog#export-options-dialog,
 		dialog#export-progress-dialog {
 			width: min(94vw, 360px);
@@ -126,27 +124,23 @@
 		}
 	}
 
-	/* touch-primary devices can't drag-and-drop or Ctrl-V paste (see
-       client/preview.ts's matching isMobile() check, which skips the
-       source step entirely on these), and the floating card's live
-       backdrop-filter/box-shadow are expensive to keep compositing over
-       the still-animating starfield/video underneath on a mobile GPU — so
-       here the dialog goes fullscreen and opaque instead of floating+blurred */
+	/* A touch-first device supports neither drag and drop nor Ctrl-V paste,
+       and the matching isMobile() check in client/preview.ts skips the source
+       step there. A live backdrop-filter over the animating starfield also
+       costs a mobile GPU a lot, so the dialog goes fullscreen and opaque. */
 	@media (hover: none) and (pointer: coarse) {
-		/* the starfield's continuous background-position/opacity keyframes
-           over a 7-layer radial-gradient are a real repaint cost on mobile
-           GPUs, running non-stop even on the idle landing screen — it's
-           pure decoration (not the video, which stays untouched), so
-           hiding it here just falls back to body's own black background */
+		/* Endless background-position and opacity keyframes over a 7-layer
+           radial gradient cost a mobile GPU a real repaint, even when idle.
+           It is decoration only, so hiding it falls back to the black
+           background of body. The video is untouched. */
 		#starfield {
 			display: none;
 		}
 
-		/* the UA default for dialog:modal caps it at ~100% minus its own
-           border/margin and sets overflow:auto — without overriding that
-           cap here, the card below (forced to a true 100vw/100dvh) ends up
-           slightly bigger than its own <dialog> parent box, and that
-           leftover UA overflow:auto is what was producing the scrollbars */
+		/* The browser default caps dialog:modal at about 100% less its own
+           border and margin, and sets `overflow: auto`. The card below takes
+           a true 100vw and 100dvh, so without this override it outgrows its
+           parent box and that leftover overflow draws scrollbars. */
 		dialog#preview-dialog {
 			width: 100vw;
 			height: 100dvh;
@@ -171,11 +165,10 @@
 			box-sizing: border-box;
 		}
 
-		/* one flex item (the active step) plus .preview-actions share the
-           card's height; the step grows to fill whatever's left instead of
-           a fixed vw/dvh box that doesn't know how tall its own siblings
-           (tagline, hint text, buttons) actually are — that mismatch is
-           what caused the scrollbars */
+		/* The active step and .preview-actions share the card height, and the
+           step grows into what remains. A fixed vw or dvh box cannot: it
+           does not know how tall its siblings are, and that mismatch is what
+           drew the scrollbars. */
 		#source-step,
 		#crop-step,
 		#edit-step {
@@ -184,8 +177,8 @@
 			width: 100%;
 		}
 
-		/* plain boxes with no intrinsic aspect ratio: fill whatever space
-           the step grants them */
+		/* Plain boxes with no natural aspect ratio. They fill the space
+           that the step gives them. */
 		#source-drop-zone,
 		#crop-area {
 			flex: 1;
@@ -195,15 +188,12 @@
 			max-height: 100%;
 		}
 
-		/* unlike the two above, #edit-canvas has a real pixel aspect ratio
-           (set from the cropped image in preview.ts) — flex:1 (flex-basis:
-           0) lets it correctly share space with its siblings (tagline,
-           tool-picker/sliders) without a fixed vw/dvh box, but that same
-           flex-basis:0 doesn't reliably preserve aspect ratio for every
-           source image (most visible on a square crop, where any stretch
-           is obvious). object-fit: contain fixes that split: flexbox is
-           free to size the box however it wants, while the canvas's own
-           rendered bitmap stays letterboxed at its correct ratio inside it */
+		/* Unlike the two rules above, #edit-canvas has a real pixel aspect
+           ratio, set from the cropped image in preview.ts. `flex: 1` shares
+           space with its siblings without a fixed box, but that same
+           flex-basis: 0 does not hold the ratio for every image, most
+           visibly on a square crop. `object-fit: contain` splits the two:
+           flexbox sizes the box, the bitmap stays letterboxed inside it. */
 		#edit-canvas {
 			flex: 1;
 			min-height: 0;

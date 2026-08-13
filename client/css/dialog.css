@@ -34,14 +34,10 @@
 		);
 	}
 
-	/* the export render progress dialog — a native <dialog> opened with
-	   showModal() (see client/export.ts), so the rest of the page becomes
-	   inert for free while a render is in flight, matching #preview-dialog's
-	   own backdrop treatment. Declared here (before #crop-step/#edit-step's
-	   own & > .tagline rule below) since Biome's static specificity check
-	   flags a lower-specificity selector for a related property defined
-	   after a higher-specificity one, even though the two never actually
-	   collide — see CLAUDE.md's Linting/formatting notes. */
+	/* The export progress dialog, a native <dialog> opened with showModal()
+	   from client/export.ts, so the rest of the page goes inert during a
+	   render. Declared before the `& > .tagline` rule below to satisfy the
+	   static specificity check of Biome. See CLAUDE.md. */
 	dialog#export-progress-dialog {
 		border: none;
 		padding: 0;
@@ -83,10 +79,8 @@
 		}
 	}
 
-	/* the pre-export options dialog — same transparent-host + blurred-backdrop
-       treatment as #preview-dialog/#export-progress-dialog above; declared
-       here for the same Biome-specificity-ordering reason noted on
-       #export-progress-dialog */
+	/* The export options dialog: same transparent host and blurred backdrop
+       as the two above, declared here for the same Biome ordering reason. */
 	dialog#export-options-dialog {
 		border: none;
 		padding: 0;
@@ -231,8 +225,8 @@
 		height: 70vh;
 		border: 1.5px solid rgba(var(--color-cyan-rgb), 0.35);
 
-		/* cropper-canvas has no default width/height beyond a 100px min-height,
-           so without this it renders far smaller than its container */
+		/* cropper-canvas has no default size beyond a 100px min-height, so
+           without this it renders far smaller than its container. */
 		cropper-canvas {
 			width: 100%;
 			height: 100%;
@@ -256,7 +250,7 @@
 		cursor: crosshair;
 		border: 1.5px solid rgba(var(--color-cyan-rgb), 0.5);
 
-		/* checkerboard so erased/picked-transparent areas are visible while editing */
+		/* A checkerboard, so transparent areas stay visible while editing. */
 		background-image:
 			linear-gradient(45deg, #444 25%, transparent 25%),
 			linear-gradient(-45deg, #444 25%, transparent 25%),
@@ -372,7 +366,7 @@
 			}
 		}
 
-		/* dismissive action: muted red border, fills solid red on hover */
+		/* The dismiss action: muted red border, solid red on hover. */
 		#preview-cancel,
 		#export-options-cancel {
 			border-color: rgba(122, 42, 42, 0.7);
@@ -385,7 +379,7 @@
 			}
 		}
 
-		/* secondary/step-back action: neutral grey, same treatment */
+		/* The step-back action: neutral grey, same treatment. */
 		#edit-back {
 			border-color: rgba(230, 230, 240, 0.3);
 
@@ -407,8 +401,8 @@
 			}
 		}
 
-		/* the final, primary action — same magenta glow-pulse language as
-           #tap-to-play, so it's unmistakably the one to press */
+		/* The final action, in the magenta glow-pulse language of
+           #tap-to-play, so it is unmistakably the one to press. */
 		#preview-confirm {
 			font-size: 15px;
 			padding: 14px 28px;
@@ -437,7 +431,7 @@
 		}
 	}
 
-	/* swaps the label for a spinner while the upload is in flight */
+	/* Replaces the label with a spinner during an upload. */
 	#preview-confirm.is-loading {
 		color: transparent;
 		position: relative;

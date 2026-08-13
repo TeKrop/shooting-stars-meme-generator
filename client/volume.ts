@@ -1,5 +1,5 @@
-// background-video volume control that lives in the persistent
-// #quick-actions dock — see export.ts for the popover pattern this mirrors
+// The volume control of the background video, in the persistent
+// #quick-actions dock.
 
 import { getVideoElement } from "./animation";
 
@@ -17,8 +17,8 @@ export function initVolumeControl() {
 		"volume-slider",
 	) as HTMLInputElement;
 
-	// reflect whatever animation.ts actually set as the default rather than
-	// hardcoding a second default here that could drift out of sync
+	// Reads the default that animation.ts set. A second default here could
+	// drift away from that value.
 	volumeSlider.value = String(Math.round(video.volume * 100));
 
 	function setMenuOpen(open: boolean) {
@@ -26,8 +26,8 @@ export function initVolumeControl() {
 		volumeBtn.setAttribute("aria-expanded", String(open));
 	}
 
-	// volume 0 and .muted both play silently, so either one should read as
-	// "muted" in the UI even if only one of them is technically true
+	// A volume of 0 plays silently. The .muted flag does the same. Either
+	// one alone therefore reads as "muted" in the user interface.
 	function isMuted(): boolean {
 		return video.muted || video.volume === 0;
 	}
@@ -46,14 +46,13 @@ export function initVolumeControl() {
 		setMenuOpen(!!volumeMenu.hidden);
 	});
 
-	// closes the popover on any click outside the group, same as export.ts
+	// Closes the popover on a click outside the group, as export.ts does.
 	document.addEventListener("click", (e) => {
 		if (!volumeGroup.contains(e.target as Node)) setMenuOpen(false);
 	});
 
-	// Escape closes the popover regardless of which element inside it is
-	// focused, so keyboard users get the same dismissal outside-click gives
-	// mouse users
+	// Escape closes the popover from any focused element inside it, so a
+	// keyboard user gets what an outside click gives a mouse user.
 	document.addEventListener("keydown", (e) => {
 		if (e.key === "Escape" && !volumeMenu.hidden) setMenuOpen(false);
 	});
@@ -63,9 +62,8 @@ export function initVolumeControl() {
 		updateMuteUI();
 	});
 
-	// dragging the slider always implies "I want sound", matching native
-	// media-player convention (un-mutes even if dragged back down to 0,
-	// which then just reads as muted again via isMuted()'s volume===0 check)
+	// A drag always means "I want sound", as a native media player does. It
+	// unmutes even at 0, which isMuted() then reads as muted again.
 	volumeSlider.addEventListener("input", () => {
 		video.volume = Number(volumeSlider.value) / 100;
 		video.muted = false;

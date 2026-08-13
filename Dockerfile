@@ -1,36 +1,34 @@
-# ---- base: package manifest + ffmpeg, shared by every stage below ----
-# Debian-based, not oven/bun:1-alpine like before the export feature (see
-# server/export.ts): @napi-rs/canvas ships prebuilt musl (Alpine) binaries in
-# principle, but Bun has its own libc-detection bug on Alpine images that has
-# already bitten a different native dependency in this repo (lightningcss) —
-# switching base image sidesteps it rather than debugging musl detection.
+# ---- base: the package manifest and ffmpeg, shared by every stage below ----
+# Debian, not oven/bun:1-alpine as before the export feature. Bun has a libc
+# detection fault on Alpine that already broke lightningcss here, and would
+# reach @napi-rs/canvas too. A different base image avoids it.
 FROM oven/bun:1 AS base
 WORKDIR /app
 COPY package.json bun.lock /app/
-# ffmpeg composites the export's rendered frames over background.mp4 and
-# encodes the result (see server/export.ts) — needed in dev too, since
-# bun-dev is what `just test` and manual export testing run against.
+# ffmpeg composites the rendered export frames over background.mp4 and
+# encodes the result (see server/export.ts). The dev image needs it too:
+# `just test` runs against bun-dev.
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# ---- deps: full install (incl. devDependencies), used by dev only ----
-# `just check`/`just test` run typecheck/lint against bun-dev, so that image
-# needs typescript/@biomejs/biome — the prod image below does not.
+# ---- deps: the full install with devDependencies, for dev only ----
+# `just check` and `just test` run against bun-dev. That image therefore needs
+# typescript and @biomejs/biome. The production image below does not.
 FROM base AS deps
 RUN bun install --frozen-lockfile
 
-# ---- dev: live HMR via `bun --hot`, source is bind-mounted at runtime ----
+# ---- dev: live HMR through `bun --hot`. Compose bind-mounts the source. ----
 FROM deps AS dev
 CMD ["bun", "--hot", "server/server.ts"]
 
-# ---- deps-prod: runtime-only install, keeps devDependencies out of prod image ----
+# ---- deps-prod: a runtime-only install. It keeps devDependencies out. ----
 FROM base AS deps-prod
 RUN bun install --frozen-lockfile --production
 
-# ---- prod: source baked in, Bun bundles/minifies/caches assets lazily at runtime ----
-# NODE_ENV=production is the one signal Bun.serve checks to switch its HTML-import
-# bundler from dev mode (unminified, /_bun/ paths) to production mode (minified,
-# cached, hashed filenames) — genuinely load-bearing, not leftover branching.
+# ---- prod: the source is baked in. Bun bundles the assets at runtime. ----
+# NODE_ENV=production is the one signal Bun.serve reads to switch its
+# HTML-import bundler to minified, cached, hashed output. Load-bearing, not
+# leftover branching.
 FROM base
 ENV NODE_ENV=production
 COPY --from=deps-prod /app/node_modules /app/node_modules

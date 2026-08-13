@@ -1,5 +1,5 @@
-// preview dialog: crop the picked image (cropperjs) then optionally
-// erase/color-pick it to transparent, before actually uploading it
+// The preview dialog: pick a file, crop it with cropperjs, optionally erase
+// or color-pick it to transparent, then upload.
 import Cropper, {
 	type CropperCanvas,
 	type CropperImage,
@@ -7,12 +7,12 @@ import Cropper, {
 } from "cropperjs";
 import { initTransparencyTools } from "./transparency";
 
-// the image is shown at this fraction of the crop zone, so its boundary
-// stays visible around the image instead of the image filling it edge-to-edge
+// The dialog shows the image at this fraction of the crop zone. The
+// boundary of the zone therefore stays visible around the image.
 const IMAGE_FIT_SCALE = 0.8;
 
-// matches the `error` query param the server redirects to '/' with (see
-// server.ts's '/upload' handler)
+// Matches the `error` query parameter of the redirect to '/'. See the
+// '/upload' handler in server.ts.
 const UPLOAD_ERROR_MESSAGES: Record<string, string> = {
 	invalid_type: "Only PNG images are supported. Please try again.",
 	too_large: "This image is too large. Please try again with a smaller one.",
@@ -24,17 +24,16 @@ const NETWORK_ERROR_MESSAGE = "Couldn't reach the server. Please try again.";
 
 const UPLOAD_ERROR_DISMISS_MS = 6000;
 
-// classifies a completed '/upload' fetch response into either a successful
-// hash or a message to show — kept separate from the dialog-closing/
-// onUploaded side effects that act on it
+// Classifies a finished '/upload' response into a hash or a message. The
+// dialog close and the onUploaded call stay outside this function.
 function classifyUploadResult(
 	res: Response,
 ): { hash: string } | { message: string } {
 	if (res.status >= 500) return { message: SERVER_ERROR_MESSAGE };
 
-	// fetch already followed the 303, so this is the final URL — a bare '/'
-	// means the upload was rejected server-side (see the `error` query
-	// param for why)
+	// fetch already followed the 303, so this is the final URL. A bare '/'
+	// means the server rejected the upload. The `error` query parameter
+	// gives the reason.
 	const url = new URL(res.url);
 	const hash = url.pathname.slice(1);
 	if (hash) return { hash };
@@ -136,15 +135,14 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 				return;
 			}
 		}
-		// clipboard had content but none of it was an image (e.g. copied text)
+		// The clipboard held content, but no image. Copied text does this.
 		showSourceError("Clipboard doesn't contain an image.");
 	}
 
 	type Step = "source" | "crop" | "edit";
 
-	// centralizes the per-step hidden/visible state for the dialog's three
-	// steps and their nav buttons, instead of each step-entry point setting
-	// all six flags by hand
+	// Holds the visible state of the three steps and their navigation buttons
+	// in one place, instead of six flags set by hand at each entry point.
 	function setStep(step: Step) {
 		sourceStep.hidden = step !== "source";
 		cropStep.hidden = step !== "crop";
@@ -163,19 +161,17 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 
 	function openSourceStep() {
 		setStep("source");
-		// a previous upload in this same dialog session may have left this
-		// disabled — reset it so a fresh upload isn't stuck uncancelable
+		// An earlier upload in this dialog session can leave this button
+		// disabled. The reset keeps a new upload cancelable.
 		cancelBtn.disabled = false;
 		previewDialog.showModal();
 	}
 
-	// drag & drop and clipboard paste (the whole point of the source step)
-	// aren't reachable when there's no precise pointer available at all —
-	// computed once since input capability doesn't change over a dialog
-	// session. Requiring *both* a coarse/no-hover primary pointer AND no
-	// fine pointer available as a secondary input (any-pointer) avoids
-	// misclassifying a hybrid touchscreen laptop/tablet that also has a
-	// mouse or trackpad attached, which still gets the full desktop flow
+	// A device with no precise pointer can reach neither drag and drop nor
+	// paste, which are the purpose of the source step. Computed once: the
+	// input hardware does not change during a dialog session.
+	// Both queries must agree. The any-pointer half keeps a touchscreen
+	// laptop with a mouse attached on the full desktop flow.
 	const isMobile =
 		window.matchMedia("(hover: none) and (pointer: coarse)").matches &&
 		!window.matchMedia("(any-pointer: fine)").matches;
@@ -206,7 +202,8 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 		if (file) openPreviewWithFile(file);
 	};
 
-	// covers both the Cancel button and native Escape-to-close on <dialog>
+	// Covers the Cancel button. Also covers the native Escape key close of
+	// the <dialog> element.
 	previewDialog.onclose = () => {
 		cropper?.destroy();
 		cropper = null;
@@ -221,8 +218,8 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 
 	function showCropStep() {
 		setStep("crop");
-		// a previous upload in this same dialog session may have left these
-		// set — reset them so a fresh upload isn't stuck disabled/loading
+		// An earlier upload in this dialog session can leave these flags
+		// set. The reset keeps a new upload usable.
 		uploadBtn.disabled = false;
 		uploadBtn.classList.remove("is-loading");
 		cancelBtn.disabled = false;
@@ -232,23 +229,18 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 		const thisCropper = new Cropper(previewImg, { container: cropArea });
 		cropper = thisCropper;
 
-		// by default, select exactly the image's own bounds — a plain
-		// full-canvas selection would extend into the letterboxed empty
-		// margin whenever the image's aspect ratio doesn't match the crop
-		// zone's, adding that empty area as extra transparent space to
-		// anyone who clicks Next without adjusting the crop themselves
+		// Selects the bounds of the image exactly. A plain full-canvas
+		// selection would reach into the empty letterbox margin whenever the
+		// two aspect ratios differ, adding transparent space to the result.
 		const cropperImage = thisCropper.getCropperImage() as CropperImage;
 		const selection = thisCropper.getCropperSelection() as CropperSelection;
 		cropperImage.$ready(() => {
-			// cropper.js's own internal image-load handler also re-centers
-			// the image (to a plain, unscaled "contain" fit) — on a cached
-			// image (e.g. re-entering this step via Back) that handler can
-			// fire *after* $ready's callback instead of before, silently
-			// undoing our scale/selection if we apply them immediately. Two
-			// animation frames reliably land after that internal handler.
+			// The internal image-load handler of cropper.js recenters the
+			// image at an unscaled "contain" fit, and on a cached image it
+			// can run *after* $ready. Two frames land after it reliably.
 			requestAnimationFrame(() => {
 				requestAnimationFrame(() => {
-					if (cropper !== thisCropper) return; // superseded by a newer step
+					if (cropper !== thisCropper) return; // A newer step replaced this one.
 					cropperImage.$center("contain").$scale(IMAGE_FIT_SCALE);
 					const canvasRect = (
 						thisCropper.getCropperCanvas() as CropperCanvas
@@ -278,16 +270,17 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 
 		setStep("edit");
 
-		// must run after editStep is unhidden: the erase cursor is sized from
-		// the canvas's displayed rect, which is 0x0 while hidden
+		// Must run after editStep becomes visible. The code sizes the erase
+		// cursor from the displayed rect of the canvas. That rect is 0x0
+		// while the step stays hidden.
 		resetTransparencyTools();
 	};
 
 	backBtn.onclick = showCropStep;
 
 	uploadBtn.onclick = async () => {
-		// prevent double-submit and a stray navigation if Cancel/Back were
-		// clicked while the upload is still in flight
+		// Stops a second submit. Also stops a stray navigation from a click
+		// on Cancel or Back during the upload.
 		uploadBtn.disabled = true;
 		uploadBtn.classList.add("is-loading");
 		cancelBtn.disabled = true;
@@ -298,8 +291,8 @@ export function initPreviewDialog(onUploaded: (hash: string) => void) {
 		});
 
 		const formData = new FormData();
-		// the server only accepts PNG uploads, keyed off this filename's
-		// extension (not the Blob's own declared `type`)
+		// The server accepts PNG uploads only. This filename gives the
+		// multipart part its image/png Content-Type.
 		formData.set("file-upload", blob, "cropped.png");
 
 		try {

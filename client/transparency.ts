@@ -1,10 +1,12 @@
-// erase/color-pick transparency editing on a canvas, with undo/redo history
+// Transparency editing on a canvas. It offers an erase tool and a
+// color-pick tool. It keeps an undo history and a redo history.
 
 type Tool = "erase" | "pick";
 
 const MAX_HISTORY = 20;
 
-// draws one erase dab (destination-out) into ctx at (x, y) with the given radius
+// Draws one erase mark into ctx at (x, y), with the given radius. It uses
+// the destination-out composite operation.
 function eraseAt(
 	ctx: CanvasRenderingContext2D,
 	x: number,
@@ -19,8 +21,8 @@ function eraseAt(
 	ctx.restore();
 }
 
-// makes every pixel within `tolerance` color-distance of (x, y) transparent
-// (simple Euclidean RGB distance, no edge feathering)
+// Makes every pixel transparent within `tolerance` color distance of (x, y).
+// The measure is a plain Euclidean RGB distance. It feathers no edge.
 function pickColorAt(
 	ctx: CanvasRenderingContext2D,
 	canvas: HTMLCanvasElement,
@@ -74,7 +76,8 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 		redoBtn.disabled = redoStack.length === 0;
 	}
 
-	// snapshots the canvas before an edit starts, so it can be undone as one step
+	// Takes a canvas snapshot before an edit starts. One undo step therefore
+	// reverses the whole edit.
 	function pushHistory() {
 		undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 		if (undoStack.length > MAX_HISTORY) undoStack.shift();
@@ -98,11 +101,9 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 		updateHistoryButtons();
 	};
 
-	// the mobile fullscreen dialog styles #edit-canvas with object-fit:
-	// contain, which can letterbox the rendered bitmap inside the element's
-	// own box (its aspect ratio no longer has to match the canvas's) — this
-	// resolves the actual rendered content rect so pointer math and cursor
-	// sizing scale against it instead of the (possibly larger) element box
+	// The mobile dialog styles #edit-canvas with `object-fit: contain`, which
+	// can letterbox the bitmap inside the element box. This returns the real
+	// content rect, so pointer math and cursor size scale against it.
 	function contentRect() {
 		const rect = canvas.getBoundingClientRect();
 		const scale = Math.min(
@@ -119,10 +120,9 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 		};
 	}
 
-	// draws the brush outline as the canvas cursor itself, so hovering shows
-	// exactly what the next erase will cover (scaled from canvas pixels to
-	// displayed CSS pixels, since the canvas can be shown smaller than its
-	// backing resolution)
+	// Draws the brush outline as the canvas cursor, so a hover shows the exact
+	// area of the next erase. The radius scales from canvas pixels to CSS
+	// pixels: the canvas can appear smaller than its backing resolution.
 	function updateEraseCursor() {
 		if (tool !== "erase") return;
 
@@ -130,9 +130,9 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 		if (!Number.isFinite(radius) || radius <= 0) return;
 
 		const displayRadius = (radius * contentRect().width) / canvas.width;
-		// rasterize at devicePixelRatio so the outline stays crisp (not
-		// blurry-upscaled) on high-DPI screens; cursor hotspot/size are in
-		// raster pixels, so everything below is scaled by dpr together
+		// Rasterizes at devicePixelRatio so the outline stays sharp on a
+		// high-DPI screen. Hotspot and size are in raster pixels, so every
+		// value below scales by dpr together.
 		const dpr = window.devicePixelRatio || 1;
 		const size = (Math.ceil(displayRadius) * 2 + 2) * dpr;
 		const center = size / 2;
@@ -154,10 +154,9 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 	eraseBtn.onclick = () => setTool("erase");
 	pickBtn.onclick = () => setTool("pick");
 
-	// rect is passed in (rather than calling contentRect() here) so a drag
-	// can compute it once at pointerdown and reuse it for every pointermove —
-	// getBoundingClientRect() can force a layout reflow, too costly to pay
-	// on every move event of a hot drag loop
+	// The caller passes `rect` in, so a drag computes it once at pointerdown
+	// and reuses it. getBoundingClientRect() can force a layout reflow, too
+	// costly for every event of a drag loop.
 	function canvasPoint(
 		e: PointerEvent,
 		rect: ReturnType<typeof contentRect>,
@@ -169,7 +168,7 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 	}
 
 	canvas.onpointerdown = (e: PointerEvent) => {
-		// computed once for the whole stroke, not per move — see canvasPoint
+		// Computed once for the whole stroke, not per move. See canvasPoint.
 		const rect = contentRect();
 		const point = canvasPoint(e, rect);
 		pushHistory();
@@ -188,8 +187,8 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 		eraseAt(ctx, point.x, point.y, Number(eraseSizeInput.value));
 		canvas.setPointerCapture(e.pointerId);
 
-		// touch pointermove can fire faster than the display refreshes;
-		// coalesce to at most one erase draw per frame instead of one per event
+		// A touch pointermove event can arrive faster than the display
+		// refreshes. This code draws at most one erase mark per frame.
 		let pendingPoint: { x: number; y: number } | null = null;
 		let rafScheduled = false;
 		const onMove = (moveEvent: PointerEvent) => {
@@ -208,11 +207,9 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 				}
 			});
 		};
-		// 'lostpointercapture' — rather than 'pointerup' alone — is what
-		// actually guarantees cleanup: it fires whenever capture ends for
-		// any reason (release, pointercancel from a browser gesture/palm
-		// rejection, programmatic release), so drag state can never get
-		// stuck with a dangling pointermove listener
+		// 'lostpointercapture' guarantees the cleanup where 'pointerup'
+		// alone does not: the browser sends it whenever capture ends, for a
+		// release, a palm rejection, or a release from code.
 		const onLostCapture = () => {
 			canvas.removeEventListener("pointermove", onMove);
 			canvas.removeEventListener("lostpointercapture", onLostCapture);
@@ -224,7 +221,7 @@ export function initTransparencyTools(canvas: HTMLCanvasElement) {
 	updateHistoryButtons();
 
 	return {
-		// clears tool/undo state for a freshly (re-)cropped image
+		// Clears the tool state and the undo state for a new crop.
 		reset() {
 			setTool("erase");
 			undoStack = [];
