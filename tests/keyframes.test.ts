@@ -47,8 +47,8 @@ describe("interpolate", () => {
 });
 
 describe("resolvePictureFrame", () => {
-	// mirrors spacetwo_3's shape: transform/filter only declared from 50%,
-	// with an implicit identity point at 0% for the interpolator to start from
+	// Copies the shape of spacetwo_3. The transform and the filter start at
+	// 50%. An implicit identity point at 0% gives the interpolator a start.
 	const anim: PictureAnimation = {
 		durationMs: 1000,
 		transformOrder: "rotate-scale",
@@ -80,17 +80,17 @@ describe("resolvePictureFrame", () => {
 	test("resolves the identity boundary at elapsed=0", () => {
 		const frame = resolvePictureFrame(anim, 0);
 		expect(frame.x).toBe(0);
-		expect(frame.scaleX).toBe(1); // no control points -> identity
+		expect(frame.scaleX).toBe(1); // No control point gives the identity.
 		expect(frame.rotateDeg).toBe(0);
 		expect(frame.opacity).toBe(0);
-		// kind is picked from the first non-"none" point regardless of the
-		// queried percent — only amount is actually interpolated
+		// The kind comes from the first point that is not "none". The queried
+		// percentage does not change it. Only the amount interpolates.
 		expect(frame.filter).toEqual({ kind: "contrast", amount: 1 });
 	});
 
 	test("resolves mid-segment values between two real control points", () => {
 		const frame = resolvePictureFrame(anim, 750);
-		expect(frame.x).toBe(-50); // halfway between 50%(-0) and 100%(-100)
+		expect(frame.x).toBe(-50); // Half way between 50% (-0) and 100% (-100).
 		expect(frame.filter.amount).toBe(3);
 	});
 

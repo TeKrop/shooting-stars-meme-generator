@@ -18,27 +18,23 @@ import {
 	renderExportInWorker,
 } from "./export";
 
-// Fixed on purpose: the app always listens on 9595 inside the container (or
-// on the host, if run directly with `bun server/server.ts`). Only the Docker
-// host-side port mapping is configurable, via APP_PORT in docker-compose.yml.
+// Fixed on purpose. The app always listens on 9595, in a container or on
+// the host. Only the host-side Docker port map changes, through APP_PORT.
 const HTTP_PORT = 9595;
-const HASH_LENGTH = parseInt(process.env.HASH_LENGTH || "5", 10); // hash length for uploaded images URL
-const MAX_HASH_ATTEMPTS = 5; // ponytail: collision odds are ~1e-8 at default HASH_LENGTH; if all attempts collide, proceed and overwrite rather than erroring out
+const HASH_LENGTH = parseInt(process.env.HASH_LENGTH || "5", 10); // Hash length for the URL of an upload.
+// ponytail: collision odds are about 1e-8 at the default HASH_LENGTH. After
+// every attempt collides, the code overwrites instead of raising an error.
+const MAX_HASH_ATTEMPTS = 5;
 
 const uploadsDir = `${import.meta.dir}/../uploads`;
 
-// generous for a cropped/edited PNG out of the browser (the crop zone tops
-// out around 800x700 CSS px, but $toCanvas() renders at source-image
-// resolution, so a large original photo can still produce a large PNG) —
-// just a sane upper bound, not a tight fit
+// A generous upper bound for a cropped PNG from the browser. $toCanvas()
+// renders at the resolution of the source image, not at the crop zone size.
 const MAX_UPLOAD_SIZE = 15 * 1024 * 1024;
 
-// extension to store the upload under, so Bun can infer the right
-// Content-Type when serving it back — the public URL/hash stays bare
-// regardless (see resolveUpload below). New uploads are PNG-only (see
-// '/upload' below, which always re-encodes client-side before sending) —
-// the rest of this map exists purely so uploads from before that
-// restriction still resolve/serve correctly (see KNOWN_SUFFIXES).
+// Extension for the stored file, so Bun can infer the Content-Type on
+// serve. The public hash stays bare. See resolveUpload below. New uploads
+// are PNG only. The other entries keep older uploads readable.
 const EXTENSION_BY_MIME: Record<string, string> = {
 	"image/png": "png",
 	"image/jpeg": "jpg",
@@ -57,9 +53,8 @@ function log(...args: unknown[]) {
 	console.log(`[${new Date().toISOString()}]`, ...args);
 }
 
-// security headers for well-known web vulnerabilities. Not applied to the
-// HTML-bundle routes ('/' and '/*' below) — Bun's HTML-import routing
-// doesn't expose a documented way to attach headers to those.
+// Security headers for well-known web vulnerabilities. The HTML bundle
+// routes '/' and '/*' do not get them. Bun exposes no documented way.
 const securityHeaders = {
 	"X-Content-Type-Options": "nosniff",
 	"X-Frame-Options": "DENY",
@@ -73,11 +68,9 @@ function withSecurityHeaders(response: Response): Response {
 	return response;
 }
 
-// serves a file from `dir`, stripping `prefix` off the request path.
-// Safe against `../` traversal (tested with plain, percent-encoded, and
-// double-encoded variants) because `new URL().pathname` normalizes dot
-// segments per the WHATWG URL spec before we ever slice it — don't replace
-// this with raw `req.url` string matching without re-verifying that.
+// Serves a file from `dir`, stripping `prefix` off the request path.
+// `new URL().pathname` normalizes dot segments before the slice, so a `../`
+// traversal fails. Do not switch to a raw `req.url` match without retesting.
 function serveFrom(dir: string, prefix: string) {
 	return async (req: Request): Promise<Response> => {
 		const url = new URL(req.url);
@@ -90,14 +83,9 @@ function serveFrom(dir: string, prefix: string) {
 	};
 }
 
-// uploads are stored on disk as `<hash>.<ext>` (see '/upload' below) but
-// served from the bare hash, so resolve the real filename by checking the
-// handful of extensions we actually write (plus the bare name, for the
-// unrecognized-MIME-type fallback in '/upload') — a fixed set of direct
-// stats, not a directory scan, so this stays O(1) regardless of how many
-// files are in `uploadsDir`.
-// `HASH_PATTERN` must be checked first: an unvalidated hash could otherwise
-// contain '../' and escape `uploadsDir`.
+// Uploads sit on disk as `<hash>.<ext>` but are served from the bare hash.
+// This loop stats a fixed set of names, so it stays O(1).
+// Check `HASH_PATTERN` first: an unchecked hash could escape `uploadsDir`.
 const HASH_PATTERN = /^[a-zA-Z0-9]+$/;
 const KNOWN_EXTENSIONS = Object.values(EXTENSION_BY_MIME);
 const KNOWN_SUFFIXES = ["", ...KNOWN_EXTENSIONS.map((ext) => `.${ext}`)];
@@ -111,12 +99,9 @@ async function resolveUpload(hash: string): Promise<string | undefined> {
 	return undefined;
 }
 
-// pre-fix uploads were stored bare (no extension), so Bun can't infer their
-// Content-Type on serve — peek at the bytes to at least recognize SVGs,
-// since that's the one format browsers refuse to render inline without the
-// correct header (raster formats already get rendered via the browser's own
-// sniffing regardless of Content-Type). Only called for bare files, which
-// is a fixed, shrinking set — not on every request.
+// Older uploads have no extension, so Bun cannot infer their Content-Type.
+// Only SVG needs the header; a browser sniffs raster formats itself. This
+// runs for bare files only, a fixed and shrinking set.
 const SVG_ROOT_TAG = /<svg[\s>]/i;
 
 async function sniffLegacyContentType(
@@ -131,11 +116,9 @@ async function sniffLegacyContentType(
 
 const dogePath = `${import.meta.dir}/../client/public/img/doge.png`;
 
-// a render is fast now (no headless browser to wait on), but still not
-// free — a single-slot lock is simpler than a real job queue for how
-// rarely concurrent exports will actually happen. exportProgress (0-100)
-// is read by '/export-status' while a render is in flight, so the client
-// can show real progress instead of a bare spinner.
+// A render is fast but not free. A single-slot lock is simpler than a job
+// queue, because two exports rarely overlap. '/export-status' reads
+// exportProgress (0-100) during a render, to show real progress.
 let exportInProgress = false;
 let exportProgress = 0;
 
@@ -156,9 +139,8 @@ function randomHash(length: number): string {
 	return hash;
 }
 
-// generates a random upload hash, retrying on an on-disk name collision —
-// collision odds are ~1e-8 at default HASH_LENGTH (see MAX_HASH_ATTEMPTS
-// above), so a fixed small retry cap is enough
+// Generates a random upload hash. Retries on a name collision on disk.
+// A small fixed retry cap is enough. See MAX_HASH_ATTEMPTS above.
 async function generateUploadHash(): Promise<string> {
 	let hash = "";
 	for (let attempts = 0; attempts < MAX_HASH_ATTEMPTS; attempts++) {
@@ -169,10 +151,9 @@ async function generateUploadHash(): Promise<string> {
 	return hash;
 }
 
-// the 8-byte PNG magic number (see the PNG spec) — checked against the
-// actual uploaded bytes since the client-declared Content-Type can be
-// spoofed by a raw POST, and the stored file is later fed straight into
-// the export renderer's native image decoder
+// The 8-byte PNG magic number. A raw POST can spoof the declared
+// Content-Type, and the export renderer later reads the stored file with a
+// native image decoder, so check the real bytes.
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
 async function hasPngSignature(file: Blob): Promise<boolean> {
@@ -208,8 +189,8 @@ function parseExportOptions(searchParams: URLSearchParams): {
 		? (rawFps as FrameRate)
 		: DEFAULT_FPS;
 
-	// enforced server-side too, not just via the client's disabled buttons —
-	// a direct request could otherwise bypass the cap
+	// The server enforces this cap too. The disabled client buttons are not
+	// enough. A direct request could otherwise pass the cap.
 	if (format === "gif") {
 		({ resolution, fps } = clampForGif(resolution, fps));
 	}
@@ -219,20 +200,11 @@ function parseExportOptions(searchParams: URLSearchParams): {
 
 const server = Bun.serve({
 	port: HTTP_PORT,
-	// Bun's default is 10s — too short for '/export/*'. No response bytes
-	// are written until the whole render finishes (a single Response at the
-	// end, not streamed), so the entire render duration counts against this
-	// timeout. Resolution/framerate/format are now configurable, capped at
-	// 720p (background.mp4's own native resolution — no point exporting
-	// larger); measured worst case at 1920x1080@60fps (before that tier was
-	// removed) was ~13s as MP4, ~20s as WebM, so 720p is safely under that.
-	// GIF is separately capped to 480p/24fps (see clampForGif in
-	// server/export.ts — uncapped GIF at 1080p/60fps was measured at ~146s,
-	// dangerously close to a timeout and disproportionate to every other
-	// combination) and was measured at ~13s at that cap (480p/24fps, GIF's
-	// own worst case, produces a ~42MB file — slow/big but still nowhere
-	// near this timeout). 60 leaves several times margin over every real
-	// worst case observed.
+	// The Bun default of 10s is too short for '/export/*'. The server sends
+	// one Response at the end and streams nothing, so the whole render
+	// counts against this timeout. The slowest capped combination measured
+	// about 13s. 60s leaves several times that margin. See CLAUDE.md for the
+	// measured numbers behind the 720p cap and the GIF cap.
 	idleTimeout: 60,
 	routes: {
 		"/": index,
@@ -242,22 +214,18 @@ const server = Bun.serve({
 				const form = await req.formData();
 				const file = form.get("file-upload");
 
-				// PNG-only: the client always crops/re-encodes through canvas
-				// before uploading (needed for the transparency-editing
-				// feature regardless of the original file's format), so
-				// there's no legitimate case where anything else arrives here.
-				// `file.type` is just the client-declared Content-Type on the
-				// multipart part, not a fact about the actual bytes, so it's
-				// only a cheap early-out here — the magic-byte check below is
-				// what actually gates what gets written to disk and later fed
-				// to the export renderer's native image decoder.
+				// PNG only: the client always re-encodes through a canvas
+				// before an upload, so nothing else arrives here
+				// legitimately. `file.type` is only what the client
+				// declares, so this is a cheap early exit. The magic-byte
+				// check below is what gates the disk.
 				if (!(file instanceof Blob) || file.type !== "image/png") {
 					log(
 						"upload rejected: not a PNG",
 						file instanceof Blob ? file.type : typeof file,
 					);
-					// the `error` query param lets the client show a
-					// specific reason instead of just failing silently
+					// The `error` query parameter lets the client show a
+					// specific reason. The upload never fails silently.
 					return withSecurityHeaders(
 						Response.redirect("/?error=invalid_type", 303),
 					);
@@ -302,11 +270,11 @@ const server = Bun.serve({
 			}
 			return withSecurityHeaders(response);
 		},
-		// script.ts references this dynamically at runtime (not statically
-		// analyzable, so the HTML bundler can't pick it up) — serve it directly
+		// script.ts names this path at runtime, as a plain string. The HTML
+		// bundler cannot analyze it, so this route serves the folder.
 		"/img/*": serveFrom(`${import.meta.dir}/../client/public/img`, "/img/"),
-		// the HTML bundler doesn't process <track src> the way it does <source
-		// src> on the same <video>, so the captions file needs its own static route
+		// The HTML bundler processes <source src>. It does not process a
+		// <track src> on the same <video>. The captions need their own route.
 		"/videos/*": serveFrom(
 			`${import.meta.dir}/../client/public/videos`,
 			"/videos/",
@@ -352,9 +320,8 @@ const server = Bun.serve({
 					format,
 					`${bytes.byteLength} bytes`,
 				);
-				// hash-named (or "doge" for the default image) rather than a
-				// fixed "shooting-stars.<ext>" so exporting the same image
-				// twice, or several different ones, don't collide on disk
+				// Named after the hash, or "doge" for the default image. A
+				// fixed name would collide on disk across two exports.
 				const filename = `${hash || "doge"}.${format}`;
 				return withSecurityHeaders(
 					new Response(bytes, {
@@ -375,11 +342,9 @@ const server = Bun.serve({
 			}
 		},
 
-		// polled by the client while an export is in flight (see
-		// client/export.ts) to show real render progress instead of a bare
-		// spinner — a separate top-level path rather than nesting under
-		// '/export/' so it can never collide with that route's wildcard hash
-		// matching (an uploaded image could theoretically hash to "status")
+		// The client polls this during an export, for real progress instead
+		// of a bare spinner. It is a top-level path, not a child of
+		// '/export/', so an upload that hashes to "status" cannot collide.
 		"/export-status": () =>
 			withSecurityHeaders(
 				Response.json({
@@ -388,7 +353,8 @@ const server = Bun.serve({
 				}),
 			),
 
-		// any other path is a client-side-routed uploaded-image hash: serve the same SPA shell
+		// Any other path is an upload hash that the client routes. Serve the
+		// same shell.
 		"/*": index,
 	},
 	error(err) {

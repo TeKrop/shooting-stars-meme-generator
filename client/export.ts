@@ -1,12 +1,11 @@
-// server-side export: hits /export/<hash>, which renders the animation
-// with a native canvas + ffmpeg (see server/export.ts) — no headless
-// browser, so this is fast enough that the progress dialog is only up for
-// roughly as long as the render + download take, not ~25s.
+// The client half of the export. It calls /export/<hash>, which renders the
+// animation with a native canvas and ffmpeg (see server/export.ts). No
+// headless browser, so the progress dialog is up only for render plus
+// download.
 
-// shared with server/export.ts (which imports the same file across the
-// client/server boundary, same as it already does for animation-timeline.ts)
-// so the option types, GIF caps/ordering, and the clamping logic itself
-// can't drift out of sync between the two — see export-options.ts
+// server/export.ts imports this same file across the client boundary, as it
+// already does for animation-timeline.ts, so the option types and the GIF
+// caps cannot drift apart. See export-options.ts.
 import {
 	clampForGif,
 	type ExportFormat,
@@ -19,9 +18,9 @@ import {
 	type Resolution,
 } from "./export-options";
 
-// dataset.value is always a plain string, even for the numeric FrameRate
-// options — this is the string-keyed form used for reading/writing DOM
-// attributes and building the size-estimate lookup key below
+// dataset.value is always a plain string, even for a numeric FrameRate
+// option. This type is the string form. The code reads and writes DOM
+// attributes with it. It also builds the size-estimate key below with it.
 type FrameRateValue = `${FrameRate}`;
 
 type ExportOptions = {
@@ -31,8 +30,9 @@ type ExportOptions = {
 	format: ExportFormat;
 };
 
-// keyed by the specific HTTP status server/server.ts's '/export/*' route can
-// return, so the user sees why it failed rather than one generic message
+// Keyed by the HTTP status values that the '/export/*' route of
+// server/server.ts returns. The user therefore sees the real reason. One
+// generic message would hide it.
 const EXPORT_ERROR_MESSAGES: Record<number, string> = {
 	404: "Couldn't find that image anymore — try uploading it again.",
 	429: "An export is already in progress. Please try again shortly.",
@@ -41,11 +41,10 @@ const DEFAULT_EXPORT_ERROR = "Couldn't export the animation. Please try again.";
 const EXPORT_ERROR_DISMISS_MS = 6000;
 const PROGRESS_POLL_MS = 200;
 
-// real measured GIF sizes (full 256-color palette, bayer_scale=5 dither, no
-// resolution scale-down) — only the combinations GIF actually allows
-// (resolution capped to 480p, fps capped to 24) have entries. Orientation
-// doesn't change total pixel count (e.g. 640x360 vs 360x640), so one
-// estimate per resolution/fps pair covers both.
+// Real measured GIF sizes, at the full 256-color palette with a
+// bayer_scale=5 dither and no downscale. Only the pairs that the GIF cap
+// allows have entries. Orientation does not change the pixel count, so one
+// estimate per pair covers both.
 const GIF_SIZE_ESTIMATE_MB: Partial<
 	Record<`${Resolution}:${FrameRateValue}`, number>
 > = {
@@ -88,13 +87,12 @@ export function initExport() {
 		"export-progress-label",
 	) as HTMLElement;
 
-	// no cancel action exists (aborting a render mid-flight isn't wired up),
-	// so block the Escape-key dismissal a native <dialog> offers by default —
-	// the dialog only closes when runExport() is done, via close() below
+	// No cancel action exists, so block the default Escape close of a native
+	// <dialog>. Only the close() call in runExport() below dismisses it.
 	progressDialog.addEventListener("cancel", (e) => e.preventDefault());
 
-	// reuses the same toast element preview.ts uses for upload errors — it's
-	// a generic dismissible message, not upload-specific despite the id
+	// Reuses the toast element that preview.ts uses for upload errors. The
+	// element shows any dismissible message. The id alone suggests otherwise.
 	const errorToast = document.getElementById("upload-error") as HTMLElement;
 	const errorToastText = errorToast.querySelector("p") as HTMLParagraphElement;
 	let errorToastTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -109,11 +107,9 @@ export function initExport() {
 		}, EXPORT_ERROR_DISMISS_MS);
 	}
 
-	// generalizes the erase/pick tool-button aria-pressed toggling in
-	// transparency.ts from two fixed buttons to N data-driven ones per group.
-	// Generic over the option-group's own value type (Orientation/Resolution/
-	// FrameRateValue/ExportFormat) so callers get a real typed value back
-	// instead of a bare string plus an `as` cast at every call site.
+	// Generalizes the aria-pressed toggle in transparency.ts from two fixed
+	// buttons to any number driven by data attributes. Generic over the value
+	// type of the group, so a caller gets a typed value back with no cast.
 	function selectOption<T extends string>(group: HTMLElement, value: T) {
 		for (const btn of group.querySelectorAll<HTMLButtonElement>("button")) {
 			btn.setAttribute("aria-pressed", String(btn.dataset.value === value));
@@ -139,9 +135,8 @@ export function initExport() {
 
 	const gifWarning = document.getElementById("gif-size-warning") as HTMLElement;
 
-	// shows a real size estimate whenever GIF is selected — full-resolution
-	// GIF has no automatic size mitigation (see GIF_SIZE_ESTIMATE_MB above),
-	// so the warning is what tells the user up front instead of a silent cap
+	// Shows a real size estimate for a GIF export. The encoder applies no
+	// automatic size reduction, so this warning is what tells the user.
 	function updateGifWarning() {
 		const isGif = getSelected<ExportFormat>(formatGroup) === "gif";
 		if (!isGif) {
@@ -159,11 +154,9 @@ export function initExport() {
 		gifWarning.hidden = false;
 	}
 
-	// disables the resolution/framerate options above the GIF cap when GIF
-	// is selected (falling back the current selection if it's now disabled),
-	// re-enables them otherwise. The fallback reuses clampForGif — the same
-	// function server/export.ts's query-param validation enforces with — so
-	// the two can't disagree on what counts as "too high" for GIF.
+	// Disables every resolution and frame rate above the GIF cap while GIF is
+	// selected, and moves the current selection down if it just went away.
+	// The move reuses clampForGif, so the server cannot disagree on the cap.
 	function applyGifCap() {
 		const isGif = getSelected<ExportFormat>(formatGroup) === "gif";
 
@@ -207,13 +200,10 @@ export function initExport() {
 	exportBtn.addEventListener("click", () => {
 		if (exportBtn.disabled) return;
 
-		// default orientation is keyed off device type (mobile -> portrait,
-		// everything else -> landscape), not the current viewport orientation
-		// — a deliberate product choice, still overridable in the dialog.
-		// Same isMobile check as preview.ts's source-step (hover:none +
-		// coarse pointer, without a fine pointer also present, to avoid
-		// misclassifying a touchscreen laptop/tablet that also has a
-		// mouse/trackpad attached).
+		// The default orientation follows the device type, not the current
+		// viewport: portrait on mobile, landscape elsewhere. A deliberate
+		// product choice, still changeable in the dialog. Same isMobile test
+		// as the source step of preview.ts.
 		const isMobile =
 			window.matchMedia("(hover: none) and (pointer: coarse)").matches &&
 			!window.matchMedia("(any-pointer: fine)").matches;
@@ -258,7 +248,7 @@ export function initExport() {
 			const { percent } = (await res.json()) as { percent: number };
 			setProgress(percent);
 		} catch {
-			// a missed tick just leaves the last known percentage on screen
+			// A missed tick leaves the last known percentage on screen.
 		}
 	}
 
@@ -270,8 +260,8 @@ export function initExport() {
 	}: ExportOptions) {
 		exportBtn.disabled = true;
 		setProgress(0);
-		// showModal() makes the rest of the page inert on its own — nothing
-		// else is reachable by click or keyboard while a render is in flight
+		// showModal() makes the rest of the page inert by itself. No click
+		// and no key can reach another element during a render.
 		progressDialog.showModal();
 		const progressTimer = setInterval(pollProgress, PROGRESS_POLL_MS);
 

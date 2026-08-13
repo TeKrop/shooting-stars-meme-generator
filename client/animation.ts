@@ -1,5 +1,5 @@
-// the shooting-stars choreography engine: launch prompt + the timed
-// picture/video sequence itself
+// The shooting-stars choreography engine. It holds the launch prompt. It
+// also holds the timed picture sequence and video sequence.
 
 import { ANIMATION_TIMELINE, pictureAnimationKey } from "./animation-timeline";
 
@@ -8,9 +8,9 @@ video.volume = 0.05;
 video.addEventListener("ended", restartAnimation, false);
 
 /**
- * Lets other modules (currently just volume.ts) read/mutate playback
- * properties like .volume/.muted without each grabbing their own
- * `document.getElementById("video")` reference
+ * Lets other modules read and change playback properties such as .volume,
+ * without each one taking its own `getElementById("video")` reference.
+ * Only volume.ts uses it now.
  */
 export function getVideoElement(): HTMLVideoElement {
 	return video;
@@ -22,33 +22,30 @@ const tapToPlay = document.getElementById("tap-to-play") as HTMLElement;
 const tapToPlayText =
 	'<span class="spark">✦</span> Press to fly <span class="spark">✦</span>';
 
-// pending setTimeout ids for the current run's picture choreography, so a
-// restart (e.g. uploading a new image mid-flight) can cancel them instead
-// of leaving them to fire later and stomp on the new run's classes
+// The pending setTimeout ids of the choreography of this run. A restart
+// cancels them, so a stale timeout cannot overwrite the new run's classes.
 let animationTimeouts: ReturnType<typeof setTimeout>[] = [];
 
-// how long to wait for the video's `playing` event before starting the
-// picture choreography anyway — covers stalled buffering, a decode error,
-// or a play() rejection, any of which would otherwise never fire `playing`
-// and leave the choreography stuck waiting forever
+// How long to wait for the `playing` event before starting anyway. Stalled
+// buffering, a decode error, or a rejected play() call each hold it back
+// forever.
 const PLAYING_FALLBACK_MS = 1000;
 
-// the current run's pending "start the choreography" trigger (either the
-// video's `playing` event or the fallback timeout above, whichever fires
-// first) — tracked so a restart before either has fired can cancel them,
-// instead of leaving a stale one to double-schedule alongside the new run's
+// The pending start trigger of this run: the `playing` event or the fallback
+// timeout above, whichever comes first. Tracked so a restart can cancel both
+// before a stale one schedules a second choreography.
 let pendingTimelineStart: (() => void) | null = null;
 let pendingTimelineFallback: ReturnType<typeof setTimeout> | null = null;
 
-// showLaunchPrompt() re-runs on every restart (video 'ended', or a fresh
-// upload) — this guards against re-attaching the click/touchend listeners
-// each time, which would otherwise fire startAnimation multiple times per
-// tap. Can't just attach them once unconditionally at module load instead:
-// they're deliberately gated behind the video being ready (see below).
+// showLaunchPrompt() runs again on every restart, so this flag stops a
+// second listener attachment that would fire startAnimation twice per tap.
+// A single attachment at module load cannot work: the listeners wait on the
+// ready state of the video.
 let launchListenersAttached = false;
 
 /**
- * Restart the event (automatic if desktop, manually if mobile)
+ * Restarts the event. A desktop browser does this automatically. A mobile
+ * browser needs a tap from the user.
  */
 export function restartAnimation() {
 	video.style.display = "none";
@@ -56,8 +53,8 @@ export function restartAnimation() {
 }
 
 /**
- * Don't allow launching until the video is actually loaded, so the
- * animation can never run ahead of a video that isn't ready yet
+ * Blocks the launch until the video loads. The animation can therefore never
+ * run ahead of a video that is not ready.
  */
 function showLaunchPrompt() {
 	landing.style.display = "flex";
@@ -65,13 +62,12 @@ function showLaunchPrompt() {
 	starfield.classList.remove("fade-out");
 	if (video.readyState >= video.HAVE_CURRENT_DATA) {
 		tapToPlay.innerHTML = `<p>${tapToPlayText}</p>`;
-		// scoped to the prompt itself, not the whole page — only clicking/
-		// tapping this specific element launches the animation (being a
-		// real <button> also gets Enter/Space handling for free)
+		// Scoped to the prompt, not the page: only this element launches
+		// the animation. It is a real <button>, so Enter and Space work.
 		if (!launchListenersAttached) {
 			tapToPlay.addEventListener("touchend", (event) => {
-				// without this, the synthetic click that follows a touch
-				// tap would call startAnimation() a second time
+				// A touch tap also sends a synthetic click event. This
+				// call stops a second startAnimation() call.
 				event.preventDefault();
 				startAnimation();
 			});
@@ -86,25 +82,24 @@ function showLaunchPrompt() {
 	}
 }
 
-// pictures classes
+// The picture classes.
 const pictures = ["pict1", "pict2", "pict3", "pict4", "pict5", "pict6"];
 
 /**
- * Start the shooting stars animation — always (re)starts cleanly, so
- * calling it while a run is already ongoing (e.g. uploading a new image
- * mid-flight) restarts from "init" with the new image instead of just
- * swapping the picture src underneath whatever's currently flying.
+ * Starts the shooting stars animation, always cleanly. A call during a run
+ * restarts from "init" with the new image, rather than swapping the source
+ * under whatever is currently flying.
  */
 export function startAnimation() {
-	// cancel any still-pending choreography from a previous run so it can't
-	// fire later and stomp on this run's classes
+	// Cancels the pending choreography of an earlier run. Those timeouts
+	// would otherwise fire later and overwrite the classes of this run.
 	animationTimeouts.forEach((id) => {
 		clearTimeout(id);
 	});
 	animationTimeouts = [];
 
-	// cancel any still-pending choreography trigger from a previous run, so
-	// it can't fire later and double-schedule alongside this run's
+	// Cancels the pending start trigger of an earlier run. It would
+	// otherwise schedule a second choreography next to this one.
 	if (pendingTimelineStart) {
 		video.removeEventListener("playing", pendingTimelineStart);
 	}
@@ -112,8 +107,8 @@ export function startAnimation() {
 		clearTimeout(pendingTimelineFallback);
 	}
 
-	// fades out rather than vanishing instantly, so the console visibly
-	// hands off to the image that flies in during the "init" stage below
+	// Fades out instead of disappearing at once. The console therefore
+	// hands off visibly to the image of the "init" stage below.
 	landing.classList.add("fade-out");
 	starfield.classList.add("fade-out");
 	video.style.display = "block";
@@ -129,22 +124,19 @@ export function startAnimation() {
 	};
 	pendingTimelineStart = startTimelineOnce;
 
-	// don't schedule the picture choreography until the video has actually
-	// started rendering frames — on mobile, play()-call-to-first-frame
-	// latency is high enough that scheduling immediately (as before) makes
-	// the pictures visibly get ahead of the video. The fallback timeout
-	// covers the case where `playing` never fires at all (see
-	// PLAYING_FALLBACK_MS above).
+	// Waits for the first rendered frame before scheduling the choreography.
+	// A mobile browser is slow between play() and that frame, so an immediate
+	// schedule puts the pictures visibly ahead of the video.
 	video.addEventListener("playing", startTimelineOnce, { once: true });
 	pendingTimelineFallback = setTimeout(startTimelineOnce, PLAYING_FALLBACK_MS);
 
-	// play the background video from the start, even if a previous run
-	// left it mid-playback
+	// Plays the background video from the start. An earlier run can leave
+	// it part way through.
 	video.currentTime = 0;
 	video.play().catch(() => {
-		// autoplay blocked or playback otherwise failed to start — the
-		// fallback timeout above still kicks off the choreography so it
-		// isn't left stuck waiting for a video that will never play
+		// The browser blocked autoplay, or playback failed to start. The
+		// fallback timeout above still starts the choreography. It
+		// therefore never waits on a video that will not play.
 	});
 }
 

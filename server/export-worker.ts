@@ -1,8 +1,8 @@
-// Entry point for the worker thread spawned by renderExportInWorker() in
-// server/export.ts — runs the actual canvas-rendering + ffmpeg pipeline off
-// the thread that serves HTTP requests. Communicates back over parentPort
-// (progress ticks, then a final result) rather than a return value, since
-// worker_threads results are message-based, not a plain awaited call.
+// The entry point for the worker thread. renderExportInWorker() in
+// server/export.ts starts it. It runs the canvas rendering and the ffmpeg
+// pipeline off the thread that serves HTTP requests. It reports back over
+// parentPort: progress ticks, then a final result. It returns no value. A
+// worker_threads result is a message, not an awaited call.
 
 import { parentPort, workerData } from "node:worker_threads";
 import type { ExportJob } from "./export";

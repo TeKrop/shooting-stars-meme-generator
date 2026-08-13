@@ -4,17 +4,15 @@ import server from "../server/server.ts";
 
 const uploadedHashes: string[] = [];
 
-// the real 8-byte PNG magic number, used to build a Blob that passes the
-// server's content-sniffing check regardless of what bytes follow it
+// The real 8-byte PNG magic number, so a test Blob passes the content check
+// of the server whatever bytes follow it.
 const PNG_SIGNATURE = new Uint8Array([
 	0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
 ]);
 
-// used by tests that need a real hash to export by, rather than the default
-// doge image — uploads the real doge.png bytes (not a "fake-png-bytes"
-// placeholder like the plain upload tests use) since exporting actually
-// decodes the file through @napi-rs/canvas's loadImage(), which a fake PNG
-// fails. Tracks the upload for cleanup like every other uploadedHashes entry.
+// For tests that need a real hash to export by. It uploads the true doge.png
+// bytes, because an export decodes the file with loadImage() and the
+// placeholder PNG of the plain upload tests fails there.
 async function uploadTestImage(): Promise<string> {
 	const dogeBytes = await Bun.file(
 		`${import.meta.dir}/../client/public/img/doge.png`,
@@ -72,10 +70,9 @@ describe("POST /upload", () => {
 	});
 
 	test("rejects a non-PNG image upload", async () => {
-		// uploads used to accept any image/* type; the client now always
-		// re-encodes to PNG before uploading (needed for the crop/
-		// transparency-editing flow regardless of the source format), so
-		// the server only accepts PNG going forward
+		// Uploads accepted any image/* type before. The client now always
+		// re-encodes to PNG for the crop and transparency steps, so the
+		// server accepts PNG only.
 		const form = new FormData();
 		form.set(
 			"file-upload",
@@ -114,11 +111,12 @@ describe("POST /upload", () => {
 		expect(location).toMatch(/^\/\w{5}$/);
 		uploadedHashes.push(`${location.slice(1)}.png`);
 
-		// the uploaded-hash path serves the same SPA shell as '/'
+		// The upload hash path serves the same shell as '/'.
 		const page = await fetch(new URL(location, server.url));
 		expect(page.status).toBe(200);
 
-		// and the actual uploaded file is stored and served back correctly
+		// The server also stores the uploaded file. It serves it back
+		// correctly.
 		const uploadedFile = await fetch(
 			new URL(`/uploads${location}`, server.url),
 		);
@@ -127,10 +125,9 @@ describe("POST /upload", () => {
 	});
 
 	test("rejects a PNG-typed Blob uploaded under a non-.png filename", async () => {
-		// the server derives the stored type from the filename extension, not
-		// the Blob's own declared `type` — this is why the client always
-		// uploads under a literal `cropped.png` filename rather than the
-		// original file's name, which could carry any extension
+		// The stored type comes from the filename extension, not the declared
+		// `type` of the Blob. This is why the client always uploads under the
+		// literal name `cropped.png`.
 		const form = new FormData();
 		form.set(
 			"file-upload",
@@ -149,9 +146,9 @@ describe("POST /upload", () => {
 	});
 
 	test("rejects a spoofed Content-Type whose bytes aren't actually a PNG", async () => {
-		// a raw client can declare `image/png` on the multipart part
-		// regardless of the real bytes — the server must check the actual
-		// file content, not just trust the declared type
+		// A raw client can declare `image/png` on the multipart part, whatever
+		// the real bytes hold. The server must therefore check the file
+		// content. It must not trust the declared type.
 		const form = new FormData();
 		form.set(
 			"file-upload",
@@ -248,18 +245,18 @@ describe("GET /export/*", () => {
 		expect(res.status).toBe(404);
 	});
 
-	// a real end-to-end render (default doge image, no headless browser
-	// involved — see server/export.ts) rather than mocking ffmpeg/canvas out,
-	// since the whole point of this feature is that this now finishes in a
-	// few seconds instead of the ~25s the old Playwright-based approach took
+	// A real end-to-end render with the default doge image. It mocks out
+	// neither ffmpeg nor the canvas: finishing in seconds, against about 25s
+	// for the old Playwright approach, is the point of the feature.
 	test("renders the default doge animation as a real MP4 export", async () => {
 		const res = await fetch(
 			new URL("/export/?orientation=landscape", server.url),
 		);
 		expect(res.status).toBe(200);
 		expect(res.headers.get("Content-Type")).toBe("video/mp4");
-		// "doge" (not a generic "shooting-stars") since no hash was given —
-		// keeps exports of different images/hashes from overwriting each other
+		// The name is "doge", not a generic "shooting-stars", because the
+		// request gave no hash. Two exports therefore never overwrite each
+		// other on disk.
 		expect(res.headers.get("Content-Disposition")).toBe(
 			'attachment; filename="doge.mp4"',
 		);
@@ -267,9 +264,9 @@ describe("GET /export/*", () => {
 		expect(bytes.byteLength).toBeGreaterThan(1000);
 	}, 30_000);
 
-	// WebM re-encodes both video (VP8) and audio (vorbis, since WebM can't
-	// carry background.mp4's AAC track the way MP4 can) rather than copying,
-	// so it's slower than the MP4 case above — still well inside the timeout
+	// WebM re-encodes video as VP8 and audio as Vorbis, because it cannot
+	// carry the AAC track that MP4 copies. It is therefore slower than the
+	// case above, but still well inside the timeout.
 	test("renders the default doge animation as a real WebM export", async () => {
 		const res = await fetch(
 			new URL("/export/?orientation=landscape&format=webm", server.url),
@@ -299,8 +296,9 @@ describe("GET /export/*", () => {
 		expect(res.headers.get("Content-Type")).toBe("video/mp4");
 	}, 30_000);
 
-	// a smaller-than-default tier (rather than one of the larger/slower ones)
-	// is enough to prove the resolution param is actually threaded through
+	// A tier below the default is enough here. It proves that the server
+	// passes the resolution parameter through. A larger tier only runs
+	// slower.
 	test("renders at a non-default resolution tier", async () => {
 		const res = await fetch(new URL("/export/?resolution=360p", server.url));
 		expect(res.status).toBe(200);
@@ -308,9 +306,8 @@ describe("GET /export/*", () => {
 		expect(bytes.byteLength).toBeGreaterThan(1000);
 	}, 30_000);
 
-	// GIF needs an extra palettegen/paletteuse filter pass (see
-	// server/export.ts) on top of the same compositing work the video
-	// formats do, so it's the slowest of the three — generous timeout
+	// GIF adds a palettegen and paletteuse pass on top of the same
+	// compositing work, so it is the slowest of the three. Generous timeout.
 	test("renders the default doge animation as a real GIF export", async () => {
 		const res = await fetch(
 			new URL("/export/?orientation=landscape&format=gif", server.url),
@@ -324,13 +321,9 @@ describe("GET /export/*", () => {
 		expect(bytes.byteLength).toBeGreaterThan(1000);
 	}, 60_000);
 
-	// GIF at high resolution/framerate was measured at ~146s/~324MB at the
-	// old (now-removed) 1080p/60fps tier vs ~20s/~6MB as WebM at the same
-	// settings — clampForGif() in server/export.ts silently downgrades a GIF
-	// request above 480p/24fps rather than rendering it as requested (GIF
-	// itself excludes the 720p tier entirely), so a request that asks for
-	// 720p/60fps GIF should still come back quickly, not hang for over a
-	// minute
+	// clampForGif() moves a GIF request above 480p24 back down instead of
+	// rendering it as sent. An uncapped GIF at 1080p60 measured about 146s
+	// and 324MB, so a 720p60 request must still come back quickly.
 	test("clamps GIF resolution/fps down from an oversized request", async () => {
 		const start = Date.now();
 		const res = await fetch(
@@ -341,10 +334,9 @@ describe("GET /export/*", () => {
 		expect(Date.now() - start).toBeLessThan(60_000);
 	}, 60_000);
 
-	// covers the hash-based naming path (the "doge" case above only covers
-	// the no-hash fallback) — same filename-building code regardless of
-	// format, so one format is enough to guard against a regression back to
-	// a fixed "shooting-stars.<ext>" name
+	// Covers the hash-based naming path; the "doge" case above covers the
+	// no-hash fallback. One format is enough, since the filename code does
+	// not branch on format.
 	test("uses the upload's hash as the exported filename", async () => {
 		const hash = await uploadTestImage();
 
@@ -357,11 +349,9 @@ describe("GET /export/*", () => {
 		);
 	}, 30_000);
 
-	// exportInProgress is a real single-slot lock (see server/server.ts), not
-	// mocked — firing two renders at once is enough to hit the 429 branch.
-	// Polls /export-status instead of a fixed delay to know the lock is
-	// actually held before firing the second request, so this can't flake
-	// under a slow/fast environment the way a hardcoded sleep could.
+	// exportInProgress is a real single-slot lock, not a mock, so two renders
+	// at once reach the 429 branch. Polling /export-status instead of sleeping
+	// proves the lock is held before the second request goes out.
 	test("rejects a second concurrent export with 429", async () => {
 		const first = fetch(new URL("/export/?orientation=landscape", server.url));
 		while (true) {
@@ -388,7 +378,7 @@ describe("GET /export-status", () => {
 		const exportPromise = fetch(
 			new URL("/export/?orientation=portrait", server.url),
 		);
-		// give the render loop a moment to start producing frames
+		// Gives the render loop time to produce its first frames.
 		await new Promise((resolve) => setTimeout(resolve, 300));
 		const statusRes = await fetch(new URL("/export-status", server.url));
 		const status = await statusRes.json();

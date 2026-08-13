@@ -7,74 +7,74 @@ docker_run := docker_compose + " run \
     --rm \
     bun"
 
-# print recipe names and comments as help
+# Prints the recipe names and their comments as help.
 help:
     @just --list
 
-# build project images
+# Builds the project images.
 build:
     @echo "Building Shooting Stars..."
     {{ docker_compose }} build
 
-# run Shooting Stars application
+# Runs the Shooting Stars application.
 start:
     @echo "Launching Shooting Stars (production mode)..."
     {{ docker_compose }} up -d
 
-# run Shooting Stars in dev mode (live HMR via `bun --hot`)
+# Runs Shooting Stars in dev mode. `bun --hot` gives live HMR.
 dev:
     @echo "Launching Shooting Stars (dev mode, Bun HMR)..."
     {{ docker_compose }} --profile dev up bun-dev
 
-# access an interactive shell inside the app container
+# Opens an interactive shell in the app container.
 shell:
     @echo "Running shell on bun container..."
     {{ docker_run }} /bin/sh
 
-# type-check + lint/format-check the sources (bun runs .ts directly either way, this only checks)
+# Checks the types, the lint rules, and the format. This recipe only reports.
 check:
     @echo "Checking..."
     {{ docker_compose }} --profile dev run --rm bun-dev bun run check
 
-# auto-fix lint/format issues (biome)
+# Corrects the lint problems and the format problems, with Biome.
 format:
     @echo "Formatting..."
     {{ docker_compose }} --profile dev run --rm bun-dev bun run lint:fix
 
-# regenerate client/css/stars.css from server/keyframes.ts
+# Regenerates client/css/stars.css from server/keyframes.ts.
 generate-css:
     @echo "Generating stars.css..."
     {{ docker_compose }} --profile dev run --rm bun-dev bun run generate:css
 
-# run the test suite (bun:test)
+# Runs the test suite, with bun:test.
 test:
     @echo "Running tests..."
     {{ docker_compose }} --profile dev run --rm bun-dev bun test
 
-# run the test suite with a coverage report (text)
+# Runs the test suite with a coverage report, as text.
 test-coverage:
     @echo "Running tests with coverage..."
     {{ docker_compose }} --profile dev run --rm bun-dev bun test --coverage
 
-# build & run Shooting Stars application (production mode)
+# Builds and runs the Shooting Stars application, in production mode.
 up: build start
 
-# stop the app and remove containers (preserves data volumes)
+# Stops the app and removes the containers. Keeps the data volumes.
 down:
     @echo "Stopping Shooting Stars and cleaning containers..."
     {{ docker_compose }} --profile "*" down --remove-orphans
 
-# stop the app, remove containers and volumes (clean slate)
+# Stops the app. Removes the containers and the volumes.
 down_clean:
     @echo "Stopping Shooting Stars and cleaning containers and volumes..."
     {{ docker_compose }} --profile "*" down -v --remove-orphans
 
-# update lock file
+# Updates the lock file.
 lock:
     @echo "Updating bun.lock..."
     {{ docker_run }} bun install
 
-# clean up Docker environment
+# Cleans up the Docker environment.
 clean: down_clean
     @echo "Cleaning Docker environment..."
     docker image prune -af

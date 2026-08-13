@@ -1,20 +1,10 @@
-// Generates client/css/stars.css from server/keyframes.ts's ANIMATIONS data
-// — keyframes.ts is the canonical animation dataset (see its header
-// comment); this script is the other direction of that relationship, so
-// the two files can never drift apart silently again.
+// Generates client/css/stars.css from the ANIMATIONS data in
+// server/keyframes.ts. Run it plain to write the file, or with `--check` for
+// the drift check that `just check` runs.
 //
-// Run directly (`bun scripts/generate-stars-css.ts`) to write the file, or
-// with `--check` (`bun scripts/generate-stars-css.ts --check`, wired as
-// `verify:css` in package.json and folded into `just check`) to compare
-// the generated text against what's on disk and exit non-zero without
-// writing — the drift check.
-//
-// Byte-identical output isn't the goal (Biome reformats the file anyway,
-// see `just format`); behaviorally identical CSS is: same property values
-// at the same keyframe percentages. `scale(x, y)` is always emitted in
-// two-argument form, even where the original hand-authored CSS used
-// `scale(n)` or `scaleX(n)` — computationally identical, no need to
-// reconstruct which literal shorthand was originally used.
+// Equal behavior is the goal, not byte-identical output: Biome reformats the
+// file anyway. This script always emits the two-argument `scale(x, y)` form,
+// which computes the same result as the original `scale(n)`.
 
 import {
 	ANIMATIONS,
@@ -22,8 +12,8 @@ import {
 	type PictureAnimation,
 } from "../server/keyframes";
 
-// className is identical to the ANIMATIONS key for every entry; only the
-// @keyframes animation-name itself differs from the class name for some.
+// className matches the ANIMATIONS key for every entry. Only the @keyframes
+// animation-name differs from the class name, and only for some entries.
 const ANIMATION_NAME: Record<string, string> = {
 	spaceone_1: "spaceone",
 	dolphins_1: "dolphins-one",

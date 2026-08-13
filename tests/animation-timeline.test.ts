@@ -5,10 +5,9 @@ import {
 } from "../client/animation-timeline";
 import { ANIMATIONS } from "../server/keyframes";
 
-// same picture id list as client/animation.ts's `pictures` and
-// server/export.ts's `pictureIds` — not exported from either, so this is a
-// third small literal copy rather than introducing a shared export nobody
-// asked for.
+// The same picture id list as `pictures` in client/animation.ts. It also
+// matches `pictureIds` in server/export.ts. Neither file exports its list.
+// This is therefore a third small copy. A shared export is not necessary.
 const pictureIds = ["pict1", "pict2", "pict3", "pict4", "pict5", "pict6"];
 
 describe("ANIMATION_TIMELINE", () => {

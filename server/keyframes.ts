@@ -1,22 +1,10 @@
-// Hand-ported copy of client/css/stars.css's @keyframes, for the /export
-// route to render frames without a browser (see server/export.ts). This is
-// the canonical animation dataset: scripts/generate-stars-css.ts generates
-// client/css/stars.css *from* this file, so edit here first, then run
-// `just generate-css` (or `bun run generate:css`) to regenerate the CSS —
-// `just check` runs the generator in --check mode and fails if the two
-// files disagree, so drift between them can't go unnoticed the way it did
-// before this generator existed.
+// The canonical animation dataset. scripts/generate-stars-css.ts writes
+// client/css/stars.css from it. Edit here, then run `just generate-css`.
 //
-// A control-point array only lists the CSS keyframe percentages where the
-// source actually specifies that property. Where stars.css omits a
-// property for part of an animation (e.g. spacetwo_3's transform/filter
-// only start at 50%, spacetwo_1's filter only starts at 60%), the browser
-// synthesizes an implicit "identity" value at the 0%/100% boundary and
-// interpolates from there — those synthetic points are written out
-// explicitly below and marked `implicit: true`, so every array already
-// spans 0-100 and the interpolator never needs special-case boundary
-// logic. The generator reads the same flag to know NOT to emit that
-// property at that percentage, since it isn't actually in the source CSS.
+// A control-point array lists only the percentages that stars.css states.
+// A point marked `implicit: true` is a synthetic identity boundary, added so
+// the interpolator can start somewhere. The generator omits those points.
+// See CLAUDE.md for the full reasoning.
 
 type ControlPoint = { percent: number; value: number; implicit?: true };
 
@@ -28,13 +16,10 @@ type FilterControlPoint = {
 	implicit?: true;
 };
 
-// stars.css doesn't use one consistent order for the transform functions:
-// spaceone/dolphins-two write `translate() scale() rotate()`, while
-// spacetwo-*/microone/microtwo write `translate() rotate() scale()` — CSS
-// composes transform functions in written order (the rightmost function
-// applies to the point first), so these produce genuinely different
-// results and server/export.ts's canvas rendering must replicate whichever
-// order the source animation actually uses.
+// stars.css is not consistent here: spaceone and dolphins-two write
+// `translate() scale() rotate()`, the rest `translate() rotate() scale()`.
+// CSS composes in written order, so the two give different results and
+// server/export.ts must follow whichever order an animation uses.
 type TransformOrder = "scale-rotate" | "rotate-scale";
 
 export type PictureAnimation = {
@@ -76,8 +61,8 @@ const filterPts = (
 		implicit ? { percent, kind, amount, implicit } : { percent, kind, amount },
 	);
 
-// spaceone's single-argument `scale(n)` applies uniformly to both axes —
-// shared by scaleX and scaleY below rather than duplicated literally.
+// The single-argument `scale(n)` of spaceone applies to both axes equally.
+// scaleX and scaleY below share this array. The values are not duplicated.
 const spaceoneScale: ControlPoint[] = pts(
 	[0, 2],
 	[5, 1.95],
@@ -205,10 +190,10 @@ export const ANIMATIONS: Record<string, PictureAnimation> = {
 
 	dolphins_1: {
 		durationMs: 4000,
-		// no scale in this animation at all, so scale/rotate order can't
-		// actually be observed — grouped with its rotate-scale sibling
-		// (dolphins_2 uses scale-rotate, so dolphins_1's own written order,
-		// translate/rotate only, doesn't collide with either)
+		// This animation holds no scale, so the order of scale and rotate
+		// cannot show any effect. It groups with its rotate-scale sibling.
+		// dolphins_2 uses scale-rotate. The written order of dolphins_1 is
+		// translate and rotate only, so it collides with neither value.
 		transformOrder: "rotate-scale",
 		x: pts(
 			[0, 1000],
@@ -782,9 +767,9 @@ function interpolateFilter(
 	return { kind, amount };
 }
 
-// elapsedMs is time since the picture's stage became active (not since the
-// whole export started) — matches how stars.css's `infinite` keyframe
-// timelines restart at 0% every time a stage swaps in a fresh class.
+// elapsedMs counts from the moment the stage of the picture became active.
+// It does not count from the start of the export. The `infinite` keyframe
+// timelines in stars.css restart at 0% for each new stage class.
 export function resolvePictureFrame(
 	anim: PictureAnimation,
 	elapsedMs: number,

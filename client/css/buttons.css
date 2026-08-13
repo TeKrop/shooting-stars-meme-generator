@@ -1,6 +1,6 @@
 @layer components {
-	/* shared chrome for both landing CTAs (launch + upload) — same size/shape
-       so neither reads as the "secondary, corner" option anymore */
+	/* Shared chrome for both landing buttons, launch and upload. Same size
+       and shape, so neither reads as the secondary corner option. */
 	.console-btn {
 		display: inline-flex;
 		align-items: center;
@@ -51,15 +51,15 @@
 			filter: brightness(0.95);
 		}
 
-		/* no lift here (unlike :hover/:active) — keyboard focus shouldn't
-           shift the button's position, just call it out with the outline */
+		/* No lift here, unlike :hover and :active. Keyboard focus must not
+           move the button; the outline alone marks it. */
 		&:focus-visible {
 			outline: 2px solid var(--color-cyan);
 			outline-offset: 4px;
 		}
 	}
 
-	/* launch — the hero action, magenta + a slow glow pulse */
+	/* Launch, the main action. It uses magenta and a slow glow pulse. */
 	.console-btn--primary {
 		border-color: rgba(var(--color-magenta-rgb), 0.6);
 		box-shadow:
@@ -67,8 +67,8 @@
 			0 0 24px rgba(var(--color-magenta-rgb), 0.18);
 		animation: pulse-glow 2.4s ease-in-out infinite;
 
-		/* the sparkles either side of the text twinkle independently, offset
-           so they don't pulse in sync */
+		/* The two sparkles beside the text twinkle on their own. An offset
+           keeps them out of step with each other. */
 		.spark {
 			display: inline-block;
 			animation: twinkle 2.4s ease-in-out infinite;
@@ -78,17 +78,16 @@
 			}
 		}
 
-		/* pausing the glow pulse here (rather than fighting it every frame)
-           lets these static box-shadow/transform values actually stick while
-           interacting */
+		/* Pauses the glow pulse rather than fighting it every frame, so
+           these fixed box-shadow and transform values hold while the user
+           interacts. */
 		&:hover,
 		&:active {
 			animation-play-state: paused;
 		}
 
-		/* gradient fill + void text is the "you're hovering this" signal on
-           top of the lift — .spark inherits `color` from here too, so the
-           sparkles flip to void along with the text */
+		/* Gradient fill plus void text is the hover signal, on top of the
+           lift. .spark inherits `color` here, so the sparkles follow. */
 		&:hover {
 			background: linear-gradient(
 				135deg,
@@ -103,8 +102,8 @@
 		}
 	}
 
-	/* upload — the secondary action, cyan, calmer (no infinite pulse) so the
-       two CTAs read as equally prominent without competing for attention */
+	/* Upload, the secondary action: cyan and calmer, with no infinite pulse,
+       so the two buttons read as equally prominent. */
 	.console-btn--secondary {
 		&:hover {
 			background: linear-gradient(
@@ -146,8 +145,8 @@
 		}
 	}
 
-	/* persistent controls — stays visible/reachable while the animation is
-       running, unlike #landing (see script.ts) */
+	/* The persistent controls: visible and reachable while the animation
+       runs, unlike #landing. See script.ts. */
 	#quick-actions {
 		position: fixed;
 		top: 20px;
@@ -211,9 +210,8 @@
 		}
 	}
 
-	/* the volume popover that opens from #volume-btn — export now opens a
-       full <dialog> (see client/css/dialog.css's #export-options-dialog)
-       instead of a popover like this one */
+	/* The volume popover, opened from #volume-btn. Export now uses a full
+       <dialog> instead. See #export-options-dialog in dialog.css. */
 	#volume-group {
 		position: relative;
 	}
@@ -267,11 +265,9 @@
 		cursor: pointer;
 	}
 
-	/* purely an internal control now — only ever clicked programmatically,
-       either by #source-browse-btn inside the preview dialog or, on mobile
-       (which skips straight past the source step), directly by the
-       .upload-trigger buttons — never labeled/focused directly (see
-       tabindex="-1" in index.html) */
+	/* An internal control: only code clicks it, from #source-browse-btn or,
+       on mobile, straight from a .upload-trigger button. It is never labeled
+       or focused. See tabindex="-1" in index.html. */
 	input#file-upload {
 		opacity: 0;
 		position: absolute;

@@ -1,11 +1,8 @@
-// Server-side animation export, without a headless browser: renders
-// transparent RGBA frames with a native canvas (replicating stars.css's
-// keyframes + animation.ts's stage timeline — see server/keyframes.ts) and
-// pipes them into a single ffmpeg process that composites them over
-// background.mp4 and encodes the result. This is why it can be near-instant
-// where the old (abandoned) approach — recording the real page with
-// Playwright — took ~20-27s per export: there's no real-time playback or
-// browser to wait on, just compositing + a fast software encode.
+// Animation export on the server, without a headless browser. A native
+// canvas renders transparent RGBA frames from server/keyframes.ts. One
+// ffmpeg process composites them over background.mp4 and encodes the result.
+// The old Playwright approach recorded the real page and needed 20 to 27
+// seconds. This one waits on no real-time playback.
 
 import { join } from "node:path";
 import { Worker } from "node:worker_threads";
@@ -14,11 +11,9 @@ import {
 	ANIMATION_TIMELINE,
 	pictureAnimationKey,
 } from "../client/animation-timeline";
-// re-exported below (via `export *`) so server.ts/export-worker.ts's
-// existing `from "./export"` imports don't need to change — this file
-// stays the single import point for server-side export code, it just
-// sources the option types/GIF caps/clamping logic from client/ now
-// instead of defining its own copy (see export-options.ts for why)
+// The `export *` below re-exports these names, so the `from "./export"`
+// imports in server.ts and export-worker.ts need no change. This file stays
+// the single import point for the export code of the server.
 import {
 	type ExportFormat,
 	FRAME_PROGRESS_CAP,
@@ -38,11 +33,9 @@ export const DEFAULT_RESOLUTION: Resolution = "480p";
 export const DEFAULT_FPS: FrameRate = 24;
 export const DEFAULT_FORMAT: ExportFormat = "mp4";
 
-// 480p is the original/default tier — kept unchanged from before resolution
-// was configurable, for continuity with any bookmarked/shared export
-// behavior. Every tier matches the export viewport's own aspect ratio
-// (16:9 landscape / 9:16 portrait); bgFilter below always scales+crops the
-// background down/up to match, regardless of orientation or tier.
+// 480p is the original default tier, kept so old shared exports still behave
+// the same way. Every tier matches the viewport aspect ratio: 16:9 landscape,
+// 9:16 portrait. The background filter below scales and crops to match.
 const VIEWPORTS: Record<
 	Orientation,
 	Record<Resolution, { width: number; height: number }>
@@ -59,16 +52,16 @@ const VIEWPORTS: Record<
 	},
 };
 
-// matches base.css's `--travel-scale: clamp(0.25, calc(100vw / 1400px), 1)`
-// — computed once per orientation since the export always uses a fixed
-// viewport size (no responsive resize mid-render)
+// Matches `--travel-scale: clamp(0.25, calc(100vw / 1400px), 1)` in base.css.
+// The code computes it once per orientation. The export viewport has a fixed
+// size. It never resizes during a render.
 function travelScale(viewportWidth: number): number {
 	return Math.min(1, Math.max(0.25, viewportWidth / 1400));
 }
 
-// matches base.css's `img { max-width: calc(30% / var(--travel-scale)) }`
-// (and max-height, same formula against viewport height) — the box an
-// uploaded image is fit into before the keyframe transform applies
+// Matches `img { max-width: calc(30% / var(--travel-scale)) }` in base.css.
+// The max-height rule uses the same formula against the viewport height.
+// An upload fits into this box before the keyframe transform applies.
 function pictureBox(
 	viewport: { width: number; height: number },
 	scale: number,
@@ -79,17 +72,17 @@ function pictureBox(
 	};
 }
 
-// the last ANIMATION_TIMELINE offset is the loop point (stage swaps back
-// to "init", matching the background video's own length / 'ended' event)
+// The last ANIMATION_TIMELINE offset is the loop point. The stage returns to
+// "init" there. That offset matches the length of the background video.
 const EXPORT_DURATION_MS = Math.max(
 	...Object.keys(ANIMATION_TIMELINE).map(Number),
 );
 
 const pictureIds = ["pict1", "pict2", "pict3", "pict4", "pict5", "pict6"];
 
-// sorted ascending so findStage can do a simple linear scan for the last
-// entry whose start is <= the current frame time — 8 entries, no need for
-// anything fancier
+// Sorted upward, so findStage can scan linearly. It takes the last entry
+// that starts at or before the current frame time. The list holds 8 entries.
+// A faster search gains nothing here.
 const timeline = Object.entries(ANIMATION_TIMELINE)
 	.map(([ms, stage]) => ({ startMs: Number(ms), ...stage }))
 	.sort((a, b) => a.startMs - b.startMs);
@@ -149,21 +142,16 @@ async function renderFrames(
 			if (frame.opacity <= 0) continue;
 
 			ctx.save();
-			// base position: img is centered in the viewport (base.css's
-			// inset:0 + margin:auto), then the individual `scale` CSS
-			// property (--travel-scale) applies, then the keyframe's own
-			// transform applies on top — travel-scale ends up multiplying
-			// the keyframe's translate distances too (confirmed against the
-			// comment in base.css: "scales the whole rendered transform
-			// down proportionally").
+			// Base position: base.css centers the image, then --travel-scale
+			// applies, then the keyframe transform. travel-scale therefore
+			// also multiplies the keyframe translate distances.
 			ctx.translate(viewport.width / 2, viewport.height / 2);
 			ctx.scale(scale, scale);
 			ctx.translate(frame.x, frame.y);
-			// stars.css doesn't use one consistent transform-function order
-			// across animations (see keyframes.ts's TransformOrder comment)
-			// — CSS composes functions in written order, so the ctx call
-			// order below must match each animation's own order, not a
-			// single hardcoded sequence.
+			// stars.css uses no single transform function order across the
+			// animations. See the TransformOrder comment in keyframes.ts.
+			// CSS composes these functions in written order. The ctx calls
+			// below must therefore follow the order of each animation.
 			const rotateRad = (frame.rotateDeg * Math.PI) / 180;
 			if (anim.transformOrder === "scale-rotate") {
 				ctx.scale(frame.scaleX, frame.scaleY);
@@ -191,16 +179,10 @@ async function renderFrames(
 		drawFrame(frameTimeMs);
 
 		await onFrame(canvas.data());
-		// frames are piped into ffmpeg as they're generated (not rendered
-		// up front then encoded in a second pass), so "frames sent so far"
-		// tracks real encode progress closely enough — no need to parse
-		// ffmpeg's own stderr progress output for this. Capped below 100
-		// (not a full 0-100 scale) since ffmpeg still has to finish encoding
-		// after the last frame is piped in — GIF's palettegen/paletteuse pass
-		// in particular keeps running well after every frame has arrived, so
-		// hitting 100% here would leave the UI stuck at "100%" for that whole
-		// remaining stretch. renderExport() emits the real 100% once ffmpeg's
-		// process has actually exited.
+		// Frames go into ffmpeg as they render, so the sent count tracks
+		// encode progress closely enough to parse no stderr output.
+		// The scale stops below 100 because ffmpeg keeps encoding after the
+		// last frame. renderExport() reports the real 100 once it exits.
 		onProgress?.(Math.round(((n + 1) / totalFrames) * FRAME_PROGRESS_CAP));
 	}
 }
@@ -227,10 +209,10 @@ async function runFfmpeg(
 
 const backgroundVideoPath = `${import.meta.dir}/../client/public/videos/background.mp4`;
 
-// background.mp4's own AAC audio track can be copied byte-for-byte into an
-// MP4 output (same container family), but WebM can't carry AAC at all —
-// vorbis is the traditional, always-available WebM audio codec, so that
-// format re-encodes instead of copying.
+// An MP4 output can copy the AAC audio track of background.mp4 byte for
+// byte. Both files use the same container family. WebM cannot carry AAC at
+// all. Vorbis is the traditional WebM audio codec. It is always available.
+// The WebM path therefore re-encodes the audio.
 const ENCODE_ARGS: Record<"mp4" | "webm", string[]> = {
 	mp4: ["-c:a", "copy", "-c:v", "libx264", "-preset", "ultrafast"],
 	webm: [
@@ -284,20 +266,11 @@ function buildFilterComplex(
 	fps: FrameRate,
 	format: ExportFormat,
 ): string {
-	// cover-crops the source background.mp4 (1280x720) down/up to the
-	// export's viewport — for portrait this also reshapes the aspect ratio,
-	// matching the CSS `min-width/min-height: 100%` "cover" sizing the
-	// <video> gets in the browser; for landscape it's just a scale (16:9
-	// already matches every landscape tier, so the crop is a no-op). The
-	// trailing fps filter resamples the background from its own native
-	// ~23.976fps up (or down) to our chosen fps *before* the overlay filter
-	// runs — without it, overlay's output cadence is driven by its *main*
-	// ([0:v], the background) input, so at fps=60 it would still only
-	// sample our 60fps picture-overlay stream ~24 times/sec (confirmed by
-	// testing: framemd5 showed heavy frame duplication, one identical frame
-	// repeated 331 times, at 60fps before this fix) — the picture motion
-	// itself needs the *main* input resampled to the target rate so overlay
-	// actually consumes a distinct overlay frame every output frame.
+	// Crops background.mp4 (1280x720) to the viewport, like CSS `cover`. The
+	// portrait path also reshapes the aspect ratio.
+	// The trailing fps filter must run before overlay. The *main* input
+	// ([0:v]) otherwise drives the output cadence, and overlay samples the
+	// picture stream at about 24fps whatever the user picked.
 	const bg: FfmpegFilterChain = {
 		inputs: ["0:v"],
 		steps: [
@@ -322,24 +295,11 @@ function buildFilterComplex(
 
 	if (format !== "gif") return renderFilterComplex([bg, overlay]);
 
-	// GIF has no audio track and needs a palette pass for reasonable
-	// quality (ffmpeg's default GIF encoder without one looks banded/dithered
-	// badly), so its filter graph/map/tail genuinely diverge from mp4/webm
-	// rather than fitting the same fixed shape. paletteuse's default dither
-	// (sierra2_4a, an error-diffusion algorithm) produces essentially random
-	// per-frame noise that both looks worse and compresses worse than an
-	// ordered (Bayer) dither for this kind of content — measured ~29%
-	// smaller (25.4MB -> 18.1MB at 360p/15fps) with no visible quality
-	// difference at bayer_scale=5 (the coarsest/most size-efficient setting)
-	// vs the default. The full 256-color palette (palettegen's default) is
-	// kept as-is — capping max_colors was tried and measured smaller but
-	// caused visible banding, so it was rejected.
-	//
-	// No automatic downscale is applied either (an earlier version silently
-	// halved the composited frame before encoding to keep files small) — the
-	// user asked for real 360p/480p GIF output instead, so full resolution
-	// is used at whatever tier is selected and the client warns with a real
-	// size estimate up front instead of the server quietly shrinking it.
+	// GIF carries no audio and needs a palette pass, so its graph diverges
+	// from the video formats. The Bayer dither measured about 29% smaller
+	// than the sierra2_4a default, with no visible quality loss.
+	// The palette keeps all 256 colors. This code applies no downscale; the
+	// client shows a size estimate instead. See CLAUDE.md.
 	return renderFilterComplex([
 		bg,
 		overlay,
@@ -372,19 +332,15 @@ export async function renderExport(
 	const mapArgs =
 		format === "gif" ? ["-map", "[out]"] : ["-map", "[comp]", "-map", "0:a?"];
 
-	// forces the actual encoded output to our chosen fps — without this,
-	// the muxer just inherits the filter graph's natural framerate (the
-	// *main* input to the overlay filter, i.e. background.mp4's own native
-	// ~23.976fps), silently ignoring whatever fps the rawvideo input above
-	// was piped at. Confirmed by testing: omitting this made every fps
-	// choice other than 24 (background.mp4's own rate, rounded) have no
-	// visible effect at all.
+	// Forces the encoded output to the selected fps. The muxer otherwise
+	// inherits the rate of the filter graph, about 23.976fps, and ignores the
+	// rawvideo input above. Every fps choice except 24 then did nothing.
 	const outputFpsArgs = ["-r", `${fps}`];
 
-	// "-shortest"/"-pix_fmt yuv420p" only make sense for the audio-bearing,
-	// yuv-encoded video formats — gif has neither an audio track to trim nor
-	// a yuv pixel format, and ffmpeg picks the gif muxer from outPath's
-	// extension on its own, same as it already does for mp4/webm
+	// "-shortest" and "-pix_fmt yuv420p" suit the video formats that carry
+	// audio and use YUV. GIF has no audio track to trim. GIF has no YUV pixel
+	// format either. ffmpeg selects the GIF muxer from the extension of
+	// outPath, as it already does for MP4 and WebM.
 	const tailArgs =
 		format === "gif"
 			? []
@@ -424,9 +380,9 @@ export async function renderExport(
 		},
 	);
 
-	// the frame-loop progress above tops out at FRAME_PROGRESS_CAP, not 100 —
-	// this is the real 100%, only reported once ffmpeg has actually finished
-	// (encoding/palette work can run well after the last frame was piped in)
+	// The frame loop above stops at FRAME_PROGRESS_CAP, not at 100. This call
+	// reports the real 100, after ffmpeg finishes. The encode work and the
+	// palette work can run long after the last frame reaches the pipe.
 	onProgress?.(100);
 
 	return outPath;
@@ -446,12 +402,9 @@ type WorkerMessage =
 	| { type: "done"; outputPath: string }
 	| { type: "error"; message: string };
 
-// runs renderExport() on a separate OS thread (server/export-worker.ts)
-// instead of directly on Bun.serve's own thread. @napi-rs/canvas's per-frame
-// drawing is synchronous native CPU work — the ffmpeg subprocess was already
-// off-thread via Bun.spawn, but without this, the *canvas* half of a render
-// would still block the server from handling any other request (page loads,
-// uploads, other exports' progress polls) for the whole render duration.
+// Runs renderExport() on a separate OS thread (server/export-worker.ts). The
+// per-frame drawing of @napi-rs/canvas is synchronous native CPU work, so it
+// would otherwise block every other request for the whole render.
 export function renderExportInWorker(
 	job: ExportJob,
 	onProgress?: (percent: number) => void,
@@ -461,11 +414,9 @@ export function renderExportInWorker(
 			workerData: job,
 		});
 
-		// export-worker.ts has nothing left to do once it posts "done"/
-		// "error", so its own script simply runs to completion and the
-		// thread exits on its own — forcibly worker.terminate()-ing it from
-		// here raced that natural exit and left Bun warning "ObjectRef is
-		// not unref" on every export
+		// export-worker.ts has no work left after it posts a result, so the
+		// thread exits by itself. A forced worker.terminate() raced that
+		// exit and made Bun warn "ObjectRef is not unref" on every export.
 		worker.on("message", (msg: WorkerMessage) => {
 			if (msg.type === "progress") {
 				onProgress?.(msg.percent);
@@ -479,12 +430,9 @@ export function renderExportInWorker(
 	});
 }
 
-// grouped under one name, rather than individually exported, so the
-// module's real public API (renderExport/renderExportInWorker/the format
-// constants above) stays the only thing other files can see — these are
-// pure helpers with no I/O, exposed here purely so tests/keyframes.test.ts
-// can call them directly instead of only exercising them incidentally
-// through a full end-to-end render.
+// One name groups these pure helpers, so the real public API of the module
+// stays visible on its own. They appear here only so tests/keyframes.test.ts
+// can call them directly, instead of through a full render.
 export const testInternals = {
 	travelScale,
 	pictureBox,

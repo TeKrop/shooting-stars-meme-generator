@@ -1,7 +1,6 @@
-# IMPORTANT: UPLOADS_DIR falls back to /tmp/shooting-stars-uploads if unset.
-# Production deployments MUST set UPLOADS_DIR in .env to the real persistent
-# host path — otherwise uploads silently start landing in an ephemeral
-# directory instead of wherever they were being served from before.
+# IMPORTANT: UPLOADS_DIR defaults to /tmp/shooting-stars-uploads.
+# A production deployment MUST set it in .env to the real persistent host
+# path. Uploads otherwise land in a temporary directory instead.
 services:
   bun:
     build: .
@@ -14,10 +13,9 @@ services:
     volumes:
       - ${UPLOADS_DIR:-/tmp/shooting-stars-uploads}:/app/uploads
     healthcheck:
-      # wget/curl aren't installed in oven/bun:1 (Debian, since the export
-      # feature needed a non-Alpine base — see Dockerfile) the way they were
-      # on the old oven/bun:1-alpine image, so use Bun's own fetch() instead
-      # of adding a package just for this
+      # The oven/bun:1 image holds no wget and no curl, unlike the old
+      # Alpine one (see Dockerfile). One healthcheck does not justify another
+      # package, so use the fetch() of Bun instead.
       test:
         [
           "CMD",
