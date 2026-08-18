@@ -1,3 +1,10 @@
+# [2.11.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.10.1...v2.11.0) (2026-08-18)
+
+
+### Features
+
+* drop legacy non-PNG upload fallback ([#44](https://github.com/TeKrop/shooting-stars-meme-generator/issues/44)) ([3c3abb5](https://github.com/TeKrop/shooting-stars-meme-generator/commit/3c3abb5dd180e1990c78781f7c83ec0f8392fda2))
+
 ## [2.10.1](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.10.0...v2.10.1) (2026-07-27)
 
 
