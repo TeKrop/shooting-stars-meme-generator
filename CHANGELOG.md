@@ -1,3 +1,10 @@
+## [2.11.1](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.11.0...v2.11.1) (2026-08-20)
+
+
+### Bug Fixes
+
+* cut the dark segment out of the background video ([#54](https://github.com/TeKrop/shooting-stars-meme-generator/issues/54)) ([fae518f](https://github.com/TeKrop/shooting-stars-meme-generator/commit/fae518fe2d0482a9f7af05dc06bdd5133f5196a7))
+
 # [2.11.0](https://github.com/TeKrop/shooting-stars-meme-generator/compare/v2.10.1...v2.11.0) (2026-08-18)
 
 
