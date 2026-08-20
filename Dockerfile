@@ -2,7 +2,7 @@
 # Debian, not oven/bun:1-alpine as before the export feature. Bun has a libc
 # detection fault on Alpine that already broke lightningcss here, and would
 # reach @napi-rs/canvas too. A different base image avoids it.
-FROM oven/bun:1 AS base
+FROM oven/bun:1.4 AS base
 WORKDIR /app
 COPY package.json bun.lock /app/
 # ffmpeg composites the rendered export frames over background.mp4 and

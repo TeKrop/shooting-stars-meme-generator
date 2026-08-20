@@ -25,8 +25,7 @@ const STAGE_DEFS: StageDef[] = [
 		gapMs: 3900,
 		pictures: ["pict1", "pict2", "pict3", "pict4", "pict5", "pict6"],
 	},
-	{ class: "dark", gapMs: 3900, pictures: [] },
-	{ class: "microone", gapMs: 1600, pictures: ["pict1"] },
+	{ class: "microone", gapMs: 3900, pictures: ["pict1"] },
 	{ class: "microtwo", gapMs: 2200, pictures: ["pict1"] },
 	{ class: "init", gapMs: 5500, pictures: [] },
 ];
