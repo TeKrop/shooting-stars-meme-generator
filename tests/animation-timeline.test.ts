@@ -11,9 +11,9 @@ import { ANIMATIONS } from "../server/keyframes";
 const pictureIds = ["pict1", "pict2", "pict3", "pict4", "pict5", "pict6"];
 
 describe("ANIMATION_TIMELINE", () => {
-	test("computed offsets match the original hardcoded timeline", () => {
+	test("computed offsets match the stage gaps", () => {
 		expect(Object.keys(ANIMATION_TIMELINE).map(Number)).toEqual([
-			0, 3900, 7700, 11600, 15500, 17100, 19300, 24800,
+			0, 3900, 7700, 11600, 15500, 17700, 23200,
 		]);
 	});
 
