@@ -23,12 +23,12 @@
 	"author": "Valentin PORCHET",
 	"license": "MIT",
 	"dependencies": {
-		"@napi-rs/canvas": "^1.0.8",
+		"@napi-rs/canvas": "^1.0.9",
 		"cropperjs": "^2.2.0"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.5.12",
-		"@types/bun": "^1.4.1",
+		"@biomejs/biome": "2.5.13",
+		"@types/bun": "^1.4.2",
 		"typescript": "^7.0.2"
 	}
 }
