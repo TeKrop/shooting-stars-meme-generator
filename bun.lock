@@ -6,11 +6,11 @@
       "name": "shooting-stars",
       "dependencies": {
         "@napi-rs/canvas": "^1.0.11",
-        "cropperjs": "^2.3.0",
+        "cropperjs": "^2.3.1",
       },
       "devDependencies": {
         "@biomejs/biome": "2.5.15",
-        "@types/bun": "^1.4.2",
+        "@types/bun": "^1.4.3",
         "typescript": "^7.0.2",
       },
     },
@@ -34,27 +34,27 @@
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.5.15", "", { "os": "win32", "cpu": "x64" }, "sha512-yAzh4UqEImV6Hcy0zjUqNfJAsUhoD64FBQCdTG8Md/Z2wQeVP/ZmJ3XRYAs1g8J9fjTFyl2fCtc5FB5til47+g=="],
 
-    "@cropper/element": ["@cropper/element@2.3.0", "", { "dependencies": { "@cropper/utils": "^2.3.0" } }, "sha512-RPY/Qj+eEvgfEyjZM/SkkQUV9/nQLC5+vktGpcjNUdUxjEAmYw0IlL+Ft5NppYSkgy9G0GgP8OLjqX0ToXuw7w=="],
+    "@cropper/element": ["@cropper/element@2.3.1", "", { "dependencies": { "@cropper/utils": "^2.3.1" } }, "sha512-CgrLOx0qERWlfJK1Ed6ePq7SXcB6gLHtj3mtDVypyzti70fJdmNxrFm5Ucbq8vpp2Yo3tW2L6uDI0IBDoiT17A=="],
 
-    "@cropper/element-canvas": ["@cropper/element-canvas@2.3.0", "", { "dependencies": { "@cropper/element": "^2.3.0", "@cropper/utils": "^2.3.0" } }, "sha512-nkK2jlwYj3FQkR6FugG1F/WzM/IicPotqx3GCHAaaBRQ4YkaiEYXDDKKZ7ApyCYktAnX7QsShXH1WE5EN1tUzA=="],
+    "@cropper/element-canvas": ["@cropper/element-canvas@2.3.1", "", { "dependencies": { "@cropper/element": "^2.3.1", "@cropper/utils": "^2.3.1" } }, "sha512-UH3VMyjn58PdwYkPiTHuvRUjGzmyKr6E2pYWxTxN/04wnjgYLA77B5u5c1HhV6vD1ZKSvxJ/i9TkiySR9P1D6A=="],
 
-    "@cropper/element-crosshair": ["@cropper/element-crosshair@2.3.0", "", { "dependencies": { "@cropper/element": "^2.3.0", "@cropper/utils": "^2.3.0" } }, "sha512-NY56wpxxksDzK0nJZe3PTvUxxrxYZK9/kLc8bSqA1Qbl7mO329IFnE0vVH5MgBtDw6dIqAMNtQbqdx6NHlQxNg=="],
+    "@cropper/element-crosshair": ["@cropper/element-crosshair@2.3.1", "", { "dependencies": { "@cropper/element": "^2.3.1", "@cropper/utils": "^2.3.1" } }, "sha512-Vz2heRwr2nd2rZ161vKyE4JwYV3eSodGCGGZq39TR0LICGOOeggLq0R664Af/eFB9PU8+tfJ42lWLoUdxQlVJQ=="],
 
-    "@cropper/element-grid": ["@cropper/element-grid@2.3.0", "", { "dependencies": { "@cropper/element": "^2.3.0", "@cropper/utils": "^2.3.0" } }, "sha512-wBvcbnfgYeTvBJMqAlEL146MELvK3zXRe3oLB+LC2FZMz9dUizruEOHqBOXrkenpGlJ+nKHbyPT5FM4g8Fp21A=="],
+    "@cropper/element-grid": ["@cropper/element-grid@2.3.1", "", { "dependencies": { "@cropper/element": "^2.3.1", "@cropper/utils": "^2.3.1" } }, "sha512-6LDaUDxH2xdA7biTcqnihPQVHjlT4bXysA403s9rU4jo5f4pPnFHtNbB+FQTYKNz5EKun52WgVtR+6oWbmbxlg=="],
 
-    "@cropper/element-handle": ["@cropper/element-handle@2.3.0", "", { "dependencies": { "@cropper/element": "^2.3.0", "@cropper/utils": "^2.3.0" } }, "sha512-IP7gNjlfZ+RC9RDposEAP5r+gGF0i9LXrGRfCmHqQEh7LILr2/mYX4QWZ7pDoBEg5zerEOjVz2NrWuxiKSOPcw=="],
+    "@cropper/element-handle": ["@cropper/element-handle@2.3.1", "", { "dependencies": { "@cropper/element": "^2.3.1", "@cropper/utils": "^2.3.1" } }, "sha512-ygLw89PWu9k8SuKW7rjRBpD6ZfmtVr5ayWux9YKHU7PxX0SeL5kbCD+PpOxQB1ycW4UcyH0tHt77EWnsdSoOHw=="],
 
-    "@cropper/element-image": ["@cropper/element-image@2.3.0", "", { "dependencies": { "@cropper/element": "^2.3.0", "@cropper/element-canvas": "^2.3.0", "@cropper/utils": "^2.3.0" } }, "sha512-G15tUyY3JDbn4b3KRBpbGfSkRB3q9/prk7rC6kEFzeEpqKVLGshRVNJjM98aK6Cx4TIk3383XY12OnTyo4wFag=="],
+    "@cropper/element-image": ["@cropper/element-image@2.3.1", "", { "dependencies": { "@cropper/element": "^2.3.1", "@cropper/element-canvas": "^2.3.1", "@cropper/utils": "^2.3.1" } }, "sha512-rPE7OX/BPTw66+DjpN5aOuPb1xSAjQMgAJZXdRgmeJnn0YcDDhfGQm8VwcL8/PMLxtWFcKEM+aUiezbO01j4fg=="],
 
-    "@cropper/element-selection": ["@cropper/element-selection@2.3.0", "", { "dependencies": { "@cropper/element": "^2.3.0", "@cropper/element-canvas": "^2.3.0", "@cropper/element-image": "^2.3.0", "@cropper/utils": "^2.3.0" } }, "sha512-uw//GK5cdY9LiqYiY+xW18uFQrzfhN38E0NO0dO5LXfudoK81OB3F55S3410bQzwrPuZVYGOHHd/SblLltdIVA=="],
+    "@cropper/element-selection": ["@cropper/element-selection@2.3.1", "", { "dependencies": { "@cropper/element": "^2.3.1", "@cropper/element-canvas": "^2.3.1", "@cropper/element-image": "^2.3.1", "@cropper/utils": "^2.3.1" } }, "sha512-b8sabaFbHeQYY459uItDIeDY0IisZBO/wF+SYhKvAgI8TExj/f2mNcBZXjPHYCkWel2+1BSUTTNZxy+tR8sDEA=="],
 
-    "@cropper/element-shade": ["@cropper/element-shade@2.3.0", "", { "dependencies": { "@cropper/element": "^2.3.0", "@cropper/element-canvas": "^2.3.0", "@cropper/element-selection": "^2.3.0", "@cropper/utils": "^2.3.0" } }, "sha512-ghjquOCKqyjyBw31AJcjjtPfB4rTQt8bufWkn63DmGOqSL+JIyEB8PBWnjN5It2qpBynbl2wqO9CG/MTk3YHrg=="],
+    "@cropper/element-shade": ["@cropper/element-shade@2.3.1", "", { "dependencies": { "@cropper/element": "^2.3.1", "@cropper/element-canvas": "^2.3.1", "@cropper/element-selection": "^2.3.1", "@cropper/utils": "^2.3.1" } }, "sha512-X5ceZsy7iBxuIRhsL05H9+cPYzxZuvM7/9j5irXIbNsDiNwTedxIHdjhEhPbUYa+FaNn9wsKId24AEyH43JTGw=="],
 
-    "@cropper/element-viewer": ["@cropper/element-viewer@2.3.0", "", { "dependencies": { "@cropper/element": "^2.3.0", "@cropper/element-canvas": "^2.3.0", "@cropper/element-image": "^2.3.0", "@cropper/element-selection": "^2.3.0", "@cropper/utils": "^2.3.0" } }, "sha512-I93yzz32j7DYPjWSNoU8GC8eX7iFsxV7oZ0inPyrafexInMFx42dSecnrlX4nelcsIvFCYNQgXDYbZG3NS7ukQ=="],
+    "@cropper/element-viewer": ["@cropper/element-viewer@2.3.1", "", { "dependencies": { "@cropper/element": "^2.3.1", "@cropper/element-canvas": "^2.3.1", "@cropper/element-image": "^2.3.1", "@cropper/element-selection": "^2.3.1", "@cropper/utils": "^2.3.1" } }, "sha512-EdrYDbnkj0IOl/kyWKzzvcDRobr7Tfzho7FkVu8mpSk1ILDHmVf8pfZrYVwou8l4znLqp8ZqwuabAezJPfC2Yg=="],
 
-    "@cropper/elements": ["@cropper/elements@2.3.0", "", { "dependencies": { "@cropper/element": "^2.3.0", "@cropper/element-canvas": "^2.3.0", "@cropper/element-crosshair": "^2.3.0", "@cropper/element-grid": "^2.3.0", "@cropper/element-handle": "^2.3.0", "@cropper/element-image": "^2.3.0", "@cropper/element-selection": "^2.3.0", "@cropper/element-shade": "^2.3.0", "@cropper/element-viewer": "^2.3.0" } }, "sha512-WSsokBF3NBMj+RQk85v402/FdMbYVJ4Mi7Oz9rACd2vpzrXkbYuLarp7j2Z74jbe5dNORqOgIpAk1KCDRs8grg=="],
+    "@cropper/elements": ["@cropper/elements@2.3.1", "", { "dependencies": { "@cropper/element": "^2.3.1", "@cropper/element-canvas": "^2.3.1", "@cropper/element-crosshair": "^2.3.1", "@cropper/element-grid": "^2.3.1", "@cropper/element-handle": "^2.3.1", "@cropper/element-image": "^2.3.1", "@cropper/element-selection": "^2.3.1", "@cropper/element-shade": "^2.3.1", "@cropper/element-viewer": "^2.3.1" } }, "sha512-+D5rFlfFlWSL1lp0vPYI59/R6XM2vMnTSX0/B1zKRvmkc0t0N0m9lxVsaDb+9RkHx6PwAkBBNPZSRUeau33jMg=="],
 
-    "@cropper/utils": ["@cropper/utils@2.3.0", "", {}, "sha512-9eMNvPaE/sD8hvATNJ5ElRR7oHQcnhLRRoFEm/j/fxzNJwwdSMnXydpEq/QqkWXD1ttZqBj9IOJjUf5ThQWYvg=="],
+    "@cropper/utils": ["@cropper/utils@2.3.1", "", {}, "sha512-b5qFTwws/osx0asIGLK1V//hdL08frGvfpi6s+p6zj5XH05ofVcz0Xl+Tot7sUx12pbfhhAlsquQTOJ1IsOoFw=="],
 
     "@napi-rs/canvas": ["@napi-rs/canvas@1.0.11", "", { "optionalDependencies": { "@napi-rs/canvas-android-arm64": "1.0.11", "@napi-rs/canvas-darwin-arm64": "1.0.11", "@napi-rs/canvas-darwin-x64": "1.0.11", "@napi-rs/canvas-linux-arm-gnueabihf": "1.0.11", "@napi-rs/canvas-linux-arm64-gnu": "1.0.11", "@napi-rs/canvas-linux-arm64-musl": "1.0.11", "@napi-rs/canvas-linux-riscv64-gnu": "1.0.11", "@napi-rs/canvas-linux-x64-gnu": "1.0.11", "@napi-rs/canvas-linux-x64-musl": "1.0.11", "@napi-rs/canvas-win32-arm64-msvc": "1.0.11", "@napi-rs/canvas-win32-x64-msvc": "1.0.11" } }, "sha512-vt5tog1cr+QKadIddGe+3LrcX0EmjEd0izF717Uwf92mBmgYfq2XRmL2r4bZU40spB69exxhrBn9I91HYEr/7w=="],
 
@@ -80,7 +80,7 @@
 
     "@napi-rs/canvas-win32-x64-msvc": ["@napi-rs/canvas-win32-x64-msvc@1.0.11", "", { "os": "win32", "cpu": "x64" }, "sha512-DFYp/ZQRdKunI/LPc0UkRXG1vlNjJKOJf8O8Ctb8+wm2Nt2ELg9Eamc31D2VoakkfGo8L+z0Iejz6WtFbQwyGw=="],
 
-    "@types/bun": ["@types/bun@1.4.2", "", { "dependencies": { "bun-types": "1.4.2" } }, "sha512-GimotNn7+ZV0uVArItBbriZsR1oNf0+WTzPkdcFrzShI7k2norL0uzEaJT8T33dWr7O/c9ZDuAFQrctKCi72oQ=="],
+    "@types/bun": ["@types/bun@1.4.3", "", { "dependencies": { "bun-types": "1.4.3" } }, "sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw=="],
 
     "@types/node": ["@types/node@26.1.1", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-nxAkRSVkN1Y0JC1W8ky/fTfkGsMmcrRsbx+3XoZE+rMOX71kLYTV7fLXpqud1GpbpP5TuffXFqfX7fH2GgZREw=="],
 
@@ -124,9 +124,9 @@
 
     "@typescript/typescript-win32-x64": ["@typescript/typescript-win32-x64@7.0.2", "", { "os": "win32", "cpu": "x64" }, "sha512-0BQ3HkAHHlKLSp1qRvf3SUhGpGsDuhB/jgFw75guyqbxJqEaS0Cw/VFO8i2nHglJUzQCRtMMR/IBAKE3ETMC4g=="],
 
-    "bun-types": ["bun-types@1.4.2", "", { "dependencies": { "@types/node": "*" } }, "sha512-bxV1FgK7yBIzjRe5zBozIM4Bem11ZJcCXSrjWRG3YWLt8yFDePu4cLjpebO8OvPeIE9trbyPF4fuj3Cia4Fj3w=="],
+    "bun-types": ["bun-types@1.4.3", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-tinRJNGOmUN+tEAsn2y2e942n9JHRHR42iUYzDH75NmhJqVBokGSQkkfSFdNWwsANIdrK6ACH9t01M452YyTwg=="],
 
-    "cropperjs": ["cropperjs@2.3.0", "", { "dependencies": { "@cropper/elements": "^2.3.0", "@cropper/utils": "^2.3.0" } }, "sha512-3Npwk6vEY/NoUsDbGqRV7LnkvHnKm5H84NSJQE3dxAyDBdFQOZY0FXLs778E3fSuFfc8KbAqWuyNLJkYp/64sQ=="],
+    "cropperjs": ["cropperjs@2.3.1", "", { "dependencies": { "@cropper/elements": "^2.3.1", "@cropper/utils": "^2.3.1" } }, "sha512-bgy+iHRFjsBxBCriXkTuFuHRJGSGZISuqDGhDQG7gLK0F7qOzhH06bdXzGf4b0bZSQ+mApakybiW9xvKnS9dbg=="],
 
     "typescript": ["typescript@7.0.2", "", { "optionalDependencies": { "@typescript/typescript-aix-ppc64": "7.0.2", "@typescript/typescript-darwin-arm64": "7.0.2", "@typescript/typescript-darwin-x64": "7.0.2", "@typescript/typescript-freebsd-arm64": "7.0.2", "@typescript/typescript-freebsd-x64": "7.0.2", "@typescript/typescript-linux-arm": "7.0.2", "@typescript/typescript-linux-arm64": "7.0.2", "@typescript/typescript-linux-loong64": "7.0.2", "@typescript/typescript-linux-mips64el": "7.0.2", "@typescript/typescript-linux-ppc64": "7.0.2", "@typescript/typescript-linux-riscv64": "7.0.2", "@typescript/typescript-linux-s390x": "7.0.2", "@typescript/typescript-linux-x64": "7.0.2", "@typescript/typescript-netbsd-arm64": "7.0.2", "@typescript/typescript-netbsd-x64": "7.0.2", "@typescript/typescript-openbsd-arm64": "7.0.2", "@typescript/typescript-openbsd-x64": "7.0.2", "@typescript/typescript-sunos-x64": "7.0.2", "@typescript/typescript-win32-arm64": "7.0.2", "@typescript/typescript-win32-x64": "7.0.2" }, "bin": { "tsc": "bin/tsc" } }, "sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA=="],
 
